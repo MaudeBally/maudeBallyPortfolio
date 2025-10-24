@@ -1,2 +1,18 @@
-User-Agent: *
-Disallow:
+# robots.txt pour site avec partie publique + admin
+# https://ton-site.com/robots.txt
+
+User-agent: *
+# 🚫 Interdire la partie admin
+Disallow: /adminInterface/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /db/
+Disallow: /login/
+Disallow: /logout/
+Disallow: /settings/
+
+# ✅ Autoriser tout le reste (portfolio public)
+Allow: /
+
+# 🗺️ Indique où se trouve ton sitemap
+Sitemap: https://ton-site.com/sitemap.xml
