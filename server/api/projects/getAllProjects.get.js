@@ -6,12 +6,12 @@ export default defineEventHandler(async (event) => {
     try {
         const projects = await Project.find()
         if (!projects) {
-            return { success: false, message: "Utilisateur introuvable" }
+            return { success: false, message: "Projet introuvable" }
         }
         return {
             success: true,
             count: projects.length,
-            projects: projects,
+            projects: projects.reverse(),
         }
     } catch (err) {
         console.error(err);

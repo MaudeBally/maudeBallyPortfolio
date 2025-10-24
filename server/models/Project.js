@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const ProjectSchema = new mongoose.Schema({
     category: {
         type: [String],
-        enum: ["Travaux personnels, Collaborations, Mandats"],
+        enum: ["Travaux personnels", "Collaborations", "Mandats"],
         required: true
     },
     title: {

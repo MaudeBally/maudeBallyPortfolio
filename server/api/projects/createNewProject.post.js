@@ -1,47 +1,67 @@
 import connectDB from '~/server/db/index'
 import Project from '~/server/models/Project'
+import fs from 'fs'
+import path from 'path'
+import formidable from 'formidable'
+import slugify from 'slugify'
 
 export default defineEventHandler(async (event) => {
   try {
     await connectDB()
+    const form = formidable({ multiples: true })
 
-    const body = await readBody(event)
+    return new Promise((resolve, reject) => {
+      form.parse(event.node.req, async (err, fields, files) => {
+        if (err) return reject(err)
 
-    // Vérification des champs obligatoires
-    if (!body.category) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Le champ "Catégorie" est requis',
-      })
-    }
-    if (!body.title) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Le champ "Titre" est requis',
-      })
-    }
-    if (!body.photos) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Le champ "Photos" est requis',
-      })
-    }
+        const title = fields.title
+        const description = fields.description || ''
+        const categories = fields.category
 
-    const newProject = new Project({
-      category: body.category,
-      title: body.title,
-      description: body.description || '',
-      photos: body.photos,
-      createdAt: new Date(),
+        if (!title) return resolve({ success: false, message: 'Titre requis' })
+        if (!categories.length) return resolve({ success: false, message: 'Categorie requise' })
+        if (!files.photos) return resolve({ success: false, message: 'Photos requises' })
+
+        // Créer projet dans la BDD
+        const newProject = new Project({
+          title: title[0],
+          description: description[0],
+          category: categories,
+          photos: [],
+          createdAt: new Date()
+        })
+
+        const savedProject = await newProject.save()
+        const projectId = savedProject._id.toString()
+
+        const projectDir = path.join('./public/projects', projectId)
+        if (!fs.existsSync(projectDir)) fs.mkdirSync(projectDir, { recursive: true })
+
+        const uploadedFiles = []
+        const fileArray = Array.isArray(files.photos) ? files.photos : [files.photos]
+
+        fileArray.forEach(file => {
+          const originalName = file.originalFilename || file.newFilename
+          const extension = path.extname(originalName)
+          const baseName = path.basename(originalName, extension)
+
+          // Crée un nom safe pour le fichier
+          const safeName = slugify(baseName, { lower: true, strict: true })
+          const finalName = `${Date.now()}-${safeName}${extension}`
+
+          const newPath = path.join(projectDir, finalName)
+          fs.renameSync(file.filepath, newPath)
+
+          uploadedFiles.push(finalName)
+        })
+
+        savedProject.photos = uploadedFiles
+        await savedProject.save()
+
+        resolve({ success: true, project: savedProject })
+      })
     })
 
-    const savedProject = await newProject.save()
-
-    return {
-      success: true,
-      message: 'Projet créé avec succès ✅',
-      project: savedProject,
-    }
   } catch (err) {
     console.error('Erreur création projet:', err)
     throw createError({
