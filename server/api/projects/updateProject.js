@@ -41,10 +41,12 @@ export default defineEventHandler(async (event) => {
                 const description = fields.description?.[0] || project.description
                 const categories = fields.category || project.category
                 const deletePhotos = fields.deletePhotos ? JSON.parse(fields.deletePhotos[0]) : []
+                const thumbnail = fields.thumbnail?.[0] || project.thumbnail
 
                 project.title = title
                 project.description = description
                 project.category = categories
+                project.thumbnail = thumbnail
 
                 const projectDir = path.join('./public/projects', projectId)
                 if (!fs.existsSync(projectDir)) fs.mkdirSync(projectDir, { recursive: true })
@@ -74,6 +76,10 @@ export default defineEventHandler(async (event) => {
                         const finalName = `${Date.now()}-${safeName}${extension}`
                         const newPath = path.join(projectDir, finalName)
                         fs.renameSync(file.filepath, newPath)
+
+                        if (originalName === thumbnail) {
+                            project.thumbnail = finalName
+                        }
                         uploadedFiles.push(finalName)
                     })
 

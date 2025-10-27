@@ -34,11 +34,12 @@
                     <label for="photos" class="custom-file-upload">Ajouter des photos</label><br>
                     <span v-if="missingPhotos" class="alert-message">Il faut ajouter au moins une photo</span>
                     <div v-if="newProjectData.photos.length" class="photo-preview-container">
-                        <div v-for="photo in newProjectData.photos" :key="photo.id" v-show="!photo.toDelete"
+                        <div v-for="(photo, index) in newProjectData.photos" :key="photo.id" v-show="!photo.toDelete"
                             class="photo-container">
                             <div class="photo-button-container">
-                                <button type="button" class="infront-photo" @click="selectImageAsThumbnail(index)">
-                                    <font-awesome-icon icon="fa-regular fa-star" />
+                                <button type="button" class="infront-photo" @click="addPhotoAsThumbnail(index)">
+                                    <font-awesome-icon v-show="thumbnailIndex !== index" icon="fa-regular fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndex === index" icon="fa-solid fa-star" />
                                 </button>
                                 <button type="button" class="delete-photo" @click="removePhoto(photo.id)">
                                     <font-awesome-icon icon="fa-solid fa-xmark" />
@@ -76,8 +77,18 @@ const newProjectData = ref({
         name: url,            // utile pour suppression côté serveur
         file: null,
         toDelete: false,
-    }))
+    })),
+    thumbnail: props.project.thumbnail
 })
+
+const thumbnailIndex = ref(-1)
+watch([newProjectData.value.photos, newProjectData.value.thumbnail], () => {
+    thumbnailIndex.value = newProjectData.value.photos.findIndex(photo => photo.name.includes(newProjectData.value.thumbnail))
+}, { immediate: true })
+
+function addPhotoAsThumbnail(index) {
+    thumbnailIndex.value = index
+}
 
 function handleAddPhotos(event) {
     const files = Array.from(event.target.files)
@@ -129,6 +140,13 @@ async function submitEdit() {
         formData.append("category", cat)
     })
 
+    //For thumbnail
+    if(newProjectData.value.photos[thumbnailIndex.value].name){
+        formData.append('thumbnail', newProjectData.value.photos[thumbnailIndex.value].name)
+    } else {
+        formData.append('thumbnail', newProjectData.value.photos[thumbnailIndex.value].file.name)
+    }
+
     // nouvelles images à uploader
     newProjectData.value.photos
         .filter(p => p.type === 'new')
@@ -163,6 +181,7 @@ watchEffect(() => {
     if (newProjectData.value.photos.length > 0) {
         missingPhotos.value = false
     }
+    console.log(newProjectData.value.photos)
 })
 </script>
 
