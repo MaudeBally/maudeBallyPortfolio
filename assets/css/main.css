@@ -19,6 +19,10 @@ body{
     font-family: 'AltesHaasGrotestRegular', sans-serif;
 }
 
+.no-scroll {
+    overflow: hidden;
+}
+
 button {
     text-decoration: none;
     border: none;

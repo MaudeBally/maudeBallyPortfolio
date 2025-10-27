@@ -59,7 +59,7 @@
                     <span v-for="category in project.category" class="category">{{ category }}</span>
                 </div>
                 <div class="project-buttons-container">
-                    <button class="modify-button">Modifier</button>
+                    <button class="modify-button" @click="selectProjectToModify(project)">Modifier</button>
                     <button class="delete-button" @click="selectProjectToDelete(project)">Supprimer</button>
                 </div>
             </div>
@@ -69,6 +69,9 @@
         <DeleteValidationComponent v-if="projectToDelete" :project="projectToDelete" @cancel="projectToDelete = null"
             @confirm="deleteProject(projectToDelete)" />
 
+        <ModifyProjectComponent v-if="projectToModify" :project="projectToModify" @cancel="projectToModify = null"
+            @save="modifyProject(projectToModify)" />
+
     </div>
 </template>
 
@@ -76,6 +79,7 @@
 import { ref, watchEffect } from 'vue';
 import axios from 'axios'
 import DeleteValidationComponent from '~/components/modals/DeleteValidationComponent.vue';
+import ModifyProjectComponent from '~/components/modals/ModifyProjectComponent.vue';
 
 const { user } = await $fetch("/api/me");
 const projects = ref([])
@@ -89,7 +93,7 @@ onMounted(async () => {
 })
 
 definePageMeta({
-    layout: 'none'
+    layout: "none"
 })
 
 const newProjectPageOpen = ref(false)
@@ -209,6 +213,33 @@ async function deleteProject(project) {
         console.error(err)
     }
 }
+
+/* ------------------------------------------------------ MODIFY MANAGEMENT ------------------------------------------ */
+const projectToModify = ref()
+function selectProjectToModify(project) {
+    projectToModify.value = project
+}
+async function modifyProject(project) {
+    try {
+
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+/* ------------------------------------------------------ Empêcher scroll si une modal est ouverte --------------------------- */
+watchEffect(() => {
+    if (!process.client) return //pour bloquer l'execution côté serveur. (Etre sûr que le document est chargé clientside)
+
+    if (projectToModify.value || projectToDelete.value) {
+        const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth
+        document.body.style.paddingRight = `${scrollBarWidth}px`
+        document.body.classList.add("no-scroll")
+    } else {
+        document.body.classList.remove("no-scroll")
+        document.body.style.paddingRight = ''
+    }
+}, [projectToDelete, projectToModify])
 </script>
 
 <style scoped>
@@ -249,11 +280,12 @@ async function deleteProject(project) {
     align-items: center;
 }
 
-.project-container > div:not(:last-child) {
+.project-container>div:not(:last-child) {
     height: 75%;
     border-right: solid 1px black;
 }
-.project-container > div:first-child {
+
+.project-container>div:first-child {
     border-right: none;
 }
 
@@ -284,7 +316,7 @@ async function deleteProject(project) {
     padding-left: 15px;
 }
 
-.category:not(:first-child){
+.category:not(:first-child) {
     border-left: 1px solid brown;
     padding-left: 10px;
 }
