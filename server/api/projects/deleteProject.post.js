@@ -2,10 +2,19 @@ import fs from 'fs'
 import path from 'path'
 import connectDB from '~/server/db/index'
 import Project from '~/server/models/Project'
+import { getCurrentUser } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
     try {
         await connectDB()
+
+        const user = await getCurrentUser(event)
+        if (!user) return {success: false, message: "Pas d'utilisateur trouvé"}
+
+        // Vérifie que l'utilisateur est propriétaire ou admin
+        if (user.role !== "admin") {
+            return {success: false, message: "Pas les droits..."}
+        }
 
         const body = await readBody(event)
         const projectId = body.projectId
