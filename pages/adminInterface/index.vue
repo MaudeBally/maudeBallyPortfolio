@@ -21,7 +21,7 @@
                 </div>
                 <div class="input-container title-container">
                     <h3>Titre du projet</h3>
-                    <input v-model="title" placeholder="Titre" style="width:100%" />
+                    <input v-model="title" placeholder="Titre" style="width:90%" /><br>
                     <span v-if="missingTitle" class="alert-message">Il manque un titre</span>
                 </div>
                 <div class="input-container description-container">
@@ -154,8 +154,8 @@ const missingCategory = ref(false)
 const missingTitle = ref(false)
 const missingPhotos = ref(false)
 const error = ref("");
+
 async function submitNewProject() {
-    console.log("submitNewProject function ??")
     missingCategory.value = categories.value.length === 0
     missingTitle.value = !title.value
     missingPhotos.value = photos.value.length === 0
