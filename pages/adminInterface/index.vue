@@ -35,14 +35,22 @@
                     <span v-if="missingPhotos" class="alert-message">Il faut ajouter au moins une photo</span>
                     <div v-if="previewUrls.length" class="photo-preview-container">
                         <div v-for="(photo, index) in previewUrls" :key="index" class="photo-container">
-                            <button class="delete-photo" @click="removeImage(index)">X</button>
-                            <progress :value="progress[index]" max="100">{{ progress[index] }}%</progress>
+                            <div class="photo-button-container">
+                                <button type="button" class="infront-photo" @click="selectImageAsThumbnail(index)">
+                                    <font-awesome-icon icon="fa-regular fa-star" />
+                                </button>
+                                <button type="button" class="delete-photo" @click="removeImage(index)">
+                                    <font-awesome-icon icon="fa-solid fa-xmark" />
+                                </button>
+                            </div>
+                            <progress :value="progress[index]" max="100" class="upload-progress-bar">{{ progress[index]
+                            }}%</progress>
                             <img :src="photo" alt="Preview" class="photo-preview">
                         </div>
                     </div>
                 </div>
                 <div class="new-project-buttons-container">
-                    <button class="cancel-button" @click="closeNewProjectForm()">Annuler</button>
+                    <button type="button" class="cancel-button" @click="closeNewProjectForm()">Annuler</button>
                     <button class="confirm-button" type="submit">Créer projet</button>
                 </div>
                 <span v-if="error" class="alert-message">{{ error }}</span>
@@ -147,6 +155,7 @@ const missingTitle = ref(false)
 const missingPhotos = ref(false)
 const error = ref("");
 async function submitNewProject() {
+    console.log("submitNewProject function ??")
     missingCategory.value = categories.value.length === 0
     missingTitle.value = !title.value
     missingPhotos.value = photos.value.length === 0
@@ -390,12 +399,36 @@ textarea {
 }
 
 .photo-container {
+    position: relative;
     width: 200px;
+    height: 200px;
+    overflow: hidden;
 }
 
 .photo-preview {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
+    /* clé magique : remplit sans déformer */
+    object-position: center;
+    /* centre l'image */
+}
+
+.photo-button-container {
+    position: absolute;
+    color: white;
+    margin: 0 10px 0 10px;
+    width: calc(100% - 20px);
+    display: flex;
+    justify-content: space-between;
+    top: 10px;
+}
+
+.upload-progress-bar {
+    position: absolute;
+    width: calc(100% - 20px);
+    bottom: 10px;
+    margin: 0 10px 0 10px;
 }
 
 .new-project-buttons-container {
