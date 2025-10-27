@@ -349,7 +349,7 @@ watchEffect(() => {
     position: absolute;
     top: 0;
     left: 0;
-    width: calc(100dvw - 50px);
+    width: calc(100dvw - 50px - 20px);
     min-height: calc(100dvh - 100px);
     background-color: white;
 
@@ -376,7 +376,7 @@ label:not(.custom-file-upload) {
 }
 
 textarea {
-    width: calc(100% - 12px);
+    width: 90%;
     resize: none;
     padding: 5px;
 }
