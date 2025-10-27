@@ -44,7 +44,7 @@
                                 </button>
                             </div>
                             <progress :value="progress[index]" max="100" class="upload-progress-bar">{{ progress[index]
-                            }}%</progress>
+                                }}%</progress>
                             <img :src="photo" alt="Preview" class="photo-preview">
                         </div>
                     </div>
@@ -78,7 +78,7 @@
             @confirm="deleteProject(projectToDelete)" />
 
         <ModifyProjectComponent v-if="projectToModify" :project="projectToModify" @cancel="projectToModify = null"
-            @save="modifyProject(projectToModify)" />
+            @updated="onProjectUpdate" />
 
     </div>
 </template>
@@ -228,12 +228,11 @@ const projectToModify = ref()
 function selectProjectToModify(project) {
     projectToModify.value = project
 }
-async function modifyProject(project) {
-    try {
-
-    } catch (err) {
-        console.log(err)
-    }
+function onProjectUpdate(updatedProject) {
+    // Remplacer l’ancien projet par le projet mis à jour
+    const index = projects.value.findIndex(p => p._id === updatedProject._id)
+    if (index !== -1) projects.value[index] = updatedProject
+    projectToModify.value = null
 }
 
 /* ------------------------------------------------------ Empêcher scroll si une modal est ouverte --------------------------- */

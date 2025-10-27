@@ -60,7 +60,10 @@
 
 <script setup>
 import { watchEffect, ref } from 'vue'
+import axios from 'axios'
 const props = defineProps({ project: Object })
+
+const emit = defineEmits(['updated'])
 
 const newProjectData = ref({
     title: props.project.title,
@@ -107,6 +110,7 @@ function removePhoto(photoId) {
 const missingCategory = ref(false)
 const missingTitle = ref(false)
 const missingPhotos = ref(false)
+const error = ref("")
 
 async function submitEdit() {
     missingCategory.value = newProjectData.value.category.length === 0
@@ -118,6 +122,7 @@ async function submitEdit() {
 
     const formData = new FormData()
 
+    formData.append("id", props.project._id)
     formData.append('title', newProjectData.value.title)
     formData.append('description', newProjectData.value.description)
     newProjectData.value.category.sort().forEach(cat => {
@@ -137,13 +142,15 @@ async function submitEdit() {
         formData.append('deletePhotos', JSON.stringify(toDelete))
     }
 
-    formData.forEach((value, key) => {
-        console.log(key, value)
+    const res = await axios.put(`/api/projects/updateProject`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    /* const res = await axios.put(`/api/projects/${props.project._id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    }) */
+    if (!res.data.success) {
+        error.value = res.message;
+    } else {
+        emit('updated', res.data.project)
+    }
 }
 //Pour remettre les messages d'erreur à jour
 watchEffect(() => {
