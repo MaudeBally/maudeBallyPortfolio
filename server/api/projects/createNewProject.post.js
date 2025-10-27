@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
         const title = fields.title
         const description = fields.description || ''
         const categories = fields.category
+        const thumbnail = fields.thumbnail
 
         if (!title) return resolve({ success: false, message: 'Titre requis' })
         if (!categories.length) return resolve({ success: false, message: 'Categorie requise' })
@@ -38,6 +39,7 @@ export default defineEventHandler(async (event) => {
           description: description[0],
           category: categories,
           photos: [],
+          thumbnail: thumbnail[0],
           createdAt: new Date()
         })
 
@@ -61,6 +63,10 @@ export default defineEventHandler(async (event) => {
 
           const newPath = path.join(projectDir, finalName)
           fs.renameSync(file.filepath, newPath)
+          
+          if(originalName === newProject.thumbnail){
+            savedProject.thumbnail = finalName
+          }
 
           uploadedFiles.push(finalName)
         })

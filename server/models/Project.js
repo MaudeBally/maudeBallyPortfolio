@@ -18,6 +18,10 @@ const ProjectSchema = new mongoose.Schema({
     photos: {
         type: [String],
         required: true
+    },
+    thumbnail: {
+        type: String,
+        required: true
     }
 });
 

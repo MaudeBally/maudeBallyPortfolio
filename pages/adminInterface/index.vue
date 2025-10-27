@@ -36,8 +36,9 @@
                     <div v-if="previewUrls.length" class="photo-preview-container">
                         <div v-for="(photo, index) in previewUrls" :key="index" class="photo-container">
                             <div class="photo-button-container">
-                                <button type="button" class="infront-photo" @click="selectImageAsThumbnail(index)">
-                                    <font-awesome-icon icon="fa-regular fa-star" />
+                                <button type="button" class="infront-photo" @click="addPhotoAsThumbnail(index)">
+                                    <font-awesome-icon v-show="thumbnailIndex !== index" icon="fa-regular fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndex === index" icon="fa-solid fa-star" />
                                 </button>
                                 <button type="button" class="delete-photo" @click="removeImage(index)">
                                     <font-awesome-icon icon="fa-solid fa-xmark" />
@@ -117,6 +118,7 @@ function resetFields() {
     description.value = ""
     categories.value = []
     photos.value = []
+    thumbnailIndex.value = 0
     previewUrls.value = []
     progress.value = []
 }
@@ -125,6 +127,7 @@ const title = ref("")
 const description = ref("")
 const categories = ref([])
 const photos = ref([])
+const thumbnailIndex = ref(0)
 const previewUrls = ref([])
 const progress = ref([])
 
@@ -150,6 +153,10 @@ function removeImage(index) {
     progress.value.splice(index, 1)
 }
 
+function addPhotoAsThumbnail(index) {
+    thumbnailIndex.value = index
+}
+
 const missingCategory = ref(false)
 const missingTitle = ref(false)
 const missingPhotos = ref(false)
@@ -170,6 +177,11 @@ async function submitNewProject() {
         formData.append("category", cat)
     })
     photos.value.forEach(file => formData.append('photos', file))
+    formData.append('thumbnail', photos.value[thumbnailIndex.value].name)
+
+    formData.forEach(data => {
+        console.log(data)
+    })
 
     const res = await axios.post('/api/projects/createNewProject', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -188,6 +200,7 @@ async function submitNewProject() {
         closeNewProjectForm();
     }
 }
+
 watchEffect(() => {
     if (categories.value.length > 0) {
         missingCategory.value = false
