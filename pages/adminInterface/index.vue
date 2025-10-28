@@ -61,7 +61,7 @@
         <div v-if="!newProjectPageOpen" class="projects-container">
             <div v-for="project in projects" :key="project._id" class="project-container">
                 <div class="thumbnail">
-                    <img :src="'/projects/' + project._id + '/' + project.photos[0]">
+                    <img :src="'/projects/' + project._id + '/' + project.thumbnail">
                 </div>
                 <div class="title">{{ project.title }}</div>
                 <div class="category-container">
