@@ -17,6 +17,7 @@
 body{
     color: brown;
     font-family: 'AltesHaasGrotestRegular', sans-serif;
+    margin: 0;
 }
 
 .no-scroll {

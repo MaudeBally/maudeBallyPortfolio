@@ -150,10 +150,15 @@ const projectsByCategory = ref(store.projectsByCategory)
 
 <style scoped>
 header {
+    width: calc(100% - 4rem);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 2rem;
+    padding: 1rem 2rem;
+    position: fixed;
+    top: 0;
+    background-color: white;
+    z-index: 3;
 }
 
 .title {
@@ -170,13 +175,18 @@ header {
 .main-content {
     display: flex;
     padding: 0 2rem;
+    margin-top: 100px;
+    margin-left: 250px;
 }
 
 .filter-container {
-    width: 270px;
+    width: 250px;
     font-size: 16px;
     font-family: 'AltesHaasGrotestBold', sans-serif;
     font-weight: 500;
+    position: fixed;
+    left: 0;
+    padding-left: 32px;
 }
 
 .filter {
