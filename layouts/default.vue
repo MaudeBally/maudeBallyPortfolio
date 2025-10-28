@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive } from 'vue';
 
-
+/* ---------------------------------- Contact POPUP --------------------------------------------------------- */
 const isContactShowing = ref(false)
 function enableContact() {
     isContactShowing.value = true
@@ -11,6 +11,7 @@ function disableContact() {
     isContactShowing.value = false
 }
 
+/* ------------------------------------------ BIOGRAPHY POPUP ------------------------------------------------- */
 const isBiographyShowing = ref(false)
 function enableBiography() {
     isBiographyShowing.value = true
@@ -82,6 +83,13 @@ function bringToFront(index) {
     })
     draggableItems[index].zIndex = 1
 }
+
+/* --------------------------------------------------- MANAGEMENT OF FILTERS ------------------------------------------------------------- */
+const store = useProjectsStore()
+await store.fetchProjects()
+const categories = ref(store.categories)
+const projectsByCategory = ref(store.projectsByCategory)
+
 </script>
 
 <template>
@@ -97,20 +105,17 @@ function bringToFront(index) {
             </div>
         </header>
         <div class="main-content">
-            <div class="filter">
+            <div class="filter-container">
                 <ul>
-                    <li>Travaux personnels</li>
-                    <ul>
-                        <li>Titre de projet personnel</li>
-                    </ul>
-                    <li>Collaborations</li>
-                    <ul>
-                        <li>Titre de collaboration</li>
-                    </ul>
-                    <li>Mandats</li>
-                    <ul>
-                        <li>Titre de mandat</li>
-                    </ul>
+                    <li v-for="category in categories" class="filter"
+                        :class="{ selectedCategory: store.activeCategory === category || !store.activeCategory }">
+                        <span class="filter-entry"
+                            @click="store.setCategory(category)">{{ category }}</span>
+                        <ul class="project-entries-container">
+                            <li v-for="project in projectsByCategory[category]" :id="project._id" class="project-entry">
+                                {{ project.title }}</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
             <slot />
@@ -167,8 +172,27 @@ header {
     padding: 0 2rem;
 }
 
-.filter {
+.filter-container {
     width: 270px;
+    font-size: 16px;
+    font-family: 'AltesHaasGrotestBold', sans-serif;
+    font-weight: 500;
+}
+
+.filter {
+    margin-bottom: 5px;
+}
+
+.project-entries-container {
+    margin-top: 5px;
+}
+
+.project-entry {
+    margin-bottom: 2px;
+}
+
+.filter:not(.selectedCategory) {
+    opacity: 0.5;
 }
 
 button,
@@ -176,6 +200,7 @@ li {
     cursor: pointer;
 }
 
+/* ------------------------------------- POPUP ---------------------------------------------------- */
 .pop-up {
     width: 300px;
     position: absolute;

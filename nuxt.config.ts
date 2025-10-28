@@ -10,5 +10,8 @@ export default defineNuxtConfig({
         {name: 'description', content: 'portfolio for Maude Bally'}
       ]
     }
-  }
+  },
+  modules: [
+    '@pinia/nuxt'
+  ]
 })
