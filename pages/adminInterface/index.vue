@@ -151,6 +151,12 @@ function removeImage(index) {
     URL.revokeObjectURL(previewUrls.value[index]) // libère la mémoire
     previewUrls.value.splice(index, 1)
     progress.value.splice(index, 1)
+    if (thumbnailIndex.value < 0 || index === thumbnailIndex.value) {
+        thumbnailIndex.value = 0
+    }
+    if (index < thumbnailIndex.value) {
+        thumbnailIndex.value = thumbnailIndex.value - 1
+    }
 }
 
 function addPhotoAsThumbnail(index) {

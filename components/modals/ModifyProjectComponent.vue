@@ -38,8 +38,8 @@
                             class="photo-container">
                             <div class="photo-button-container">
                                 <button type="button" class="infront-photo" @click="addPhotoAsThumbnail(index)">
-                                    <font-awesome-icon v-show="thumbnailIndex !== index" icon="fa-regular fa-star" />
-                                    <font-awesome-icon v-show="thumbnailIndex === index" icon="fa-solid fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndexComputed  !== index" icon="fa-regular fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndexComputed  === index" icon="fa-solid fa-star" />
                                 </button>
                                 <button type="button" class="delete-photo" @click="removePhoto(photo.id)">
                                     <font-awesome-icon icon="fa-solid fa-xmark" />
@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { watchEffect, ref } from 'vue'
+import { watchEffect, ref, onMounted } from 'vue'
 import axios from 'axios'
 const props = defineProps({ project: Object })
 
@@ -81,13 +81,30 @@ const newProjectData = ref({
     thumbnail: props.project.thumbnail
 })
 
-const thumbnailIndex = ref(-1)
-watch([newProjectData.value.photos, newProjectData.value.thumbnail], () => {
-    thumbnailIndex.value = newProjectData.value.photos.findIndex(photo => photo.name.includes(newProjectData.value.thumbnail))
-}, { immediate: true })
+const thumbnailId = ref(null)
+const thumbnailIndexComputed = computed(() =>
+    newProjectData.value.photos.findIndex(p => p.id === thumbnailId.value)
+)
+onMounted(() => {
+    if (newProjectData.value.thumbnail) {
+        const found = newProjectData.value.photos.find(p => p.name === newProjectData.value.thumbnail)
+        if (found) thumbnailId.value = found.id
+        else thumbnailId.value = null
+    } else {
+        //si pas de thumbnail, on prend la première photo non supprimée
+        const first = newProjectData.value.photos.find(p => !p.toDelete)
+        if (first) {
+            thumbnailId.value = first.id
+            newProjectData.value.thumbnail = first.name || first.file?.name || ''
+        }
+    }
+})
 
 function addPhotoAsThumbnail(index) {
-    thumbnailIndex.value = index
+    const photo = newProjectData.value.photos[index]
+    if (!photo) return
+    thumbnailId.value = photo.id
+    newProjectData.value.thumbnail = photo.type === 'existing' ? photo.name : (photo.file?.name || photo.name)
 }
 
 function handleAddPhotos(event) {
@@ -100,6 +117,12 @@ function handleAddPhotos(event) {
         toDelete: false,
     }))
     newProjectData.value.photos.push(...newPhotos)
+
+    // Si on n'avait pas de thumbnail, définir la première nouvelle comme thumbnail
+    if (!thumbnailId.value && newPhotos.length) {
+        thumbnailId.value = newPhotos[0].id
+        newProjectData.value.thumbnail = newPhotos[0].name
+    }
 }
 
 function removePhoto(photoId) {
@@ -109,12 +132,24 @@ function removePhoto(photoId) {
     const photo = newProjectData.value.photos[index]
 
     if (photo.type === 'existing') {
-        // On ne la supprime pas localement, on la marque pour suppression
         photo.toDelete = true
     } else {
-        // C’est un nouveau fichier -> on peut le retirer directement
         URL.revokeObjectURL(photo.src)
         newProjectData.value.photos.splice(index, 1)
+    }
+
+    // Si on a supprimé (ou marqué) l'image qui était thumbnail, réajuster
+    if (photoId === thumbnailId.value) {
+        // cherche la première photo non marquée toDelete
+        const firstAvailable = newProjectData.value.photos.find(p => !p.toDelete)
+        if (firstAvailable) {
+            thumbnailId.value = firstAvailable.id
+            newProjectData.value.thumbnail = firstAvailable.type === 'existing' ? firstAvailable.name : (firstAvailable.file?.name || firstAvailable.name)
+        } else {
+            // aucune photo restante
+            thumbnailId.value = null
+            newProjectData.value.thumbnail = ''
+        }
     }
 }
 
@@ -141,10 +176,8 @@ async function submitEdit() {
     })
 
     //For thumbnail
-    if(newProjectData.value.photos[thumbnailIndex.value].name){
-        formData.append('thumbnail', newProjectData.value.photos[thumbnailIndex.value].name)
-    } else {
-        formData.append('thumbnail', newProjectData.value.photos[thumbnailIndex.value].file.name)
+    if (newProjectData.value.thumbnail) {
+        formData.append('thumbnail', newProjectData.value.thumbnail)
     }
 
     // nouvelles images à uploader
