@@ -90,6 +90,21 @@ await store.fetchProjects()
 const categories = ref(store.categories)
 const projectsByCategory = ref(store.projectsByCategory)
 
+const route = useRoute()
+const isBlocked = computed(() => route.name === 'projects-id')
+
+function onCategoryChange(category) {
+    if (!isBlocked.value) {
+        store.setCategory(category)
+    }
+}
+
+function onProjectSelection(project) {
+    if (project.category.includes(store.activeCategory) || !store.activeCategory) {
+        navigateTo(`/projects/${project._id}`)
+        store.setCategory(null)
+    }
+}
 </script>
 
 <template>
@@ -107,12 +122,16 @@ const projectsByCategory = ref(store.projectsByCategory)
         <div class="main-content">
             <div class="filter-container">
                 <ul>
-                    <li v-for="category in categories" class="filter"
-                        :class="{ selectedCategory: store.activeCategory === category || !store.activeCategory }">
-                        <span class="filter-entry"
-                            @click="store.setCategory(category)">{{ category }}</span>
+                    <li v-for="category in categories" class="filter">
+                        <span class="filter-entry" @click="onCategoryChange(category)" :class="{
+                            selectedCategory: store.activeCategory === category || !store.activeCategory,
+                            selectedProject: !store.activeProject
+                        }">
+                            {{ category }}</span>
                         <ul class="project-entries-container">
-                            <li v-for="project in projectsByCategory[category]" :id="project._id" class="project-entry">
+                            <li v-for="project in projectsByCategory[category]" :id="project._id" class="project-entry"
+                                :class="{ selectedProject: store.activeProject === project || !store.activeProject }"
+                                @click="onProjectSelection(project)">
                                 {{ project.title }}</li>
                         </ul>
                     </li>
@@ -201,9 +220,16 @@ header {
     margin-bottom: 2px;
 }
 
-.filter:not(.selectedCategory) {
+.filter-entry:not(.selectedCategory),
+.filter-entry:not(.selectedCategory)+ul>li {
     opacity: 0.5;
 }
+
+.filter-entry:not(.selectedProject),
+.project-entry:not(.selectedProject) {
+    opacity: 0.5;
+}
+
 
 button,
 li {

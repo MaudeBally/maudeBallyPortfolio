@@ -16,8 +16,12 @@ if (!project.value) {
     project.value = res.project || null
 }
 
-watchEffect(() => {
-    console.log(project.value)
+store.setProject(project)
+
+// Déclenché quand on quitte cette page
+onBeforeRouteLeave((to, from, next) => {
+    store.setProject(null) // supprime selectedProject
+    next() // continue la navigation
 })
 </script>
 

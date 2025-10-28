@@ -3,7 +3,8 @@
         <div v-for="(col, colIndex) in columns" :key="colIndex" class="portfolio-container-col"
             :class="`col${colIndex + 1}`">
             <div v-for="project in col" :key="project._id" class="project-container">
-                <img class="thumbnail" :src="`/projects/${project._id}/${project.thumbnail}`" :alt="project.name" @click="navigateToProject(project._id)" />
+                <img class="thumbnail" :src="`/projects/${project._id}/${project.thumbnail}`" :alt="project.name"
+                    @click="navigateToProject(project._id)" />
             </div>
         </div>
     </div>
@@ -23,6 +24,7 @@ const columns = computed(() => {
 
 function navigateToProject(id) {
     navigateTo(`/projects/${id}`)
+    store.setCategory(null)
 }
 </script>
 
