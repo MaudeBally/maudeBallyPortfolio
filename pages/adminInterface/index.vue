@@ -90,7 +90,6 @@ import axios from 'axios'
 import DeleteValidationComponent from '~/components/modals/DeleteValidationComponent.vue';
 import ModifyProjectComponent from '~/components/modals/ModifyProjectComponent.vue';
 
-const { user } = await $fetch("/api/me");
 const projects = ref([])
 onMounted(async () => {
     try {

@@ -22,9 +22,8 @@ const columns = computed(() => {
 })
 
 function navigateToProject(id) {
-    console.log(id)
+    navigateTo(`/projects/${id}`)
 }
-
 </script>
 
 <style scoped>
