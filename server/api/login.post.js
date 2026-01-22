@@ -20,16 +20,17 @@ export default defineEventHandler(async (event) => {
     }
 
     // Créer un JWT
+    const config = useRuntimeConfig()
     const token = jwt.sign(
         { id: user._id, username: user.username, role: user.role },
-        process.env.JWT_SECRET,
+        config.jwt_secret,
         { expiresIn: "1h" }
     );
 
     // Stocker en cookie HTTP-only
     setCookie(event, "token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: config.node_env === "production",
         sameSite: "strict",
         maxAge: 3600,
     });

@@ -7,8 +7,9 @@ export async function getCurrentUser(event) {
   const token = getCookie(event, 'token')
   if (!token) return null
 
+  const config = useRuntimeConfig()
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET)
+    const payload = jwt.verify(token, config.jwt_secret)
     return payload
   } catch (err) {
     return null
