@@ -23,8 +23,8 @@ function disableBiography() {
 
 //Manage dragging of elements in layout
 const draggableItems = reactive([
-    { x: 300, y: 100, zIndex: 1, isDragging: false },
-    { x: 400, y: 150, zIndex: 0, isDragging: false }
+    { x: 20, y: 100, zIndex: 1, isDragging: false },
+    { x: 50, y: 150, zIndex: 0, isDragging: false }
 ]);
 const contact = ref(null);
 const biography = ref(null);
@@ -61,7 +61,7 @@ function onDrag(event) {
 
     // Empêche de dépasser les bords
     newX = Math.max(0, Math.min(maxX, newX));
-    newY = Math.max(0, Math.min(maxY, newY));
+    newY = Math.max(70, Math.min(maxY, newY));
 
     draggableItems[dragIndex].x = newX;
     draggableItems[dragIndex].y = newY;
@@ -105,6 +105,12 @@ function onProjectSelection(project) {
         store.setCategory(null)
     }
 }
+
+/* ----------------------------------------------------- HIDE FILTERS ON PROJECT ---------------------------------------------------------- */
+const isProjectView = computed(() => {
+    return route.name === "projects-id"
+})
+
 </script>
 
 <template>
@@ -119,8 +125,8 @@ function onProjectSelection(project) {
                 <button @click="enableBiography()">Biographie</button>
             </div>
         </header>
-        <div class="main-content">
-            <div class="filter-container">
+        <div class="main-content" :class="{ noMargin: isProjectView }">
+            <div v-if="!isProjectView" class="filter-container">
                 <ul>
                     <li v-for="category in categories" class="filter">
                         <span class="filter-entry" @click="onCategoryChange(category)" :class="{
@@ -198,6 +204,10 @@ header {
     margin-left: 250px;
 }
 
+.noMargin {
+    margin-left: 0
+}
+
 .filter-container {
     width: 250px;
     font-size: 16px;
@@ -239,7 +249,7 @@ li {
 /* ------------------------------------- POPUP ---------------------------------------------------- */
 .pop-up {
     width: 300px;
-    position: absolute;
+    position: fixed;
     border: solid 1px brown;
     background-color: white;
 }
