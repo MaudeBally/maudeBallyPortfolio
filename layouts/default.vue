@@ -1,6 +1,8 @@
 <script setup>
 import { ref, reactive } from 'vue';
 
+const { locales, setLocale, locale } = useI18n()
+
 /* ---------------------------------- Contact POPUP --------------------------------------------------------- */
 const isContactShowing = ref(false)
 function enableContact() {
@@ -90,8 +92,11 @@ await store.fetchProjects()
 const categories = ref(store.categories)
 const projectsByCategory = ref(store.projectsByCategory)
 
+console.log(categories.value)
+console.log(projectsByCategory.value)
+
 const route = useRoute()
-const isBlocked = computed(() => route.name === 'projects-id')
+const isBlocked = computed(() => route.name.includes("projects-id"))
 
 function onCategoryChange(category) {
     if (!isBlocked.value) {
@@ -108,7 +113,7 @@ function onProjectSelection(project) {
 
 /* ----------------------------------------------------- HIDE FILTERS ON PROJECT ---------------------------------------------------------- */
 const isProjectView = computed(() => {
-    return route.name === "projects-id"
+    return route.name.includes("projects-id") 
 })
 
 </script>
@@ -118,11 +123,13 @@ const isProjectView = computed(() => {
         <header>
             <NuxtLink class="title" to="/">Maude Bally</NuxtLink>
             <div class="nav">
+                <button @click="enableContact()">{{ $t('nav.contact') }}</button>
+                <button @click="enableBiography()">{{ $t('nav.bio') }}</button>
                 <div class="language-picker">
-                    <button>Langue</button>
+                    <button v-for="locale in locales" @click="setLocale(locale.code)">
+                        {{ locale.name }}
+                    </button>
                 </div>
-                <button @click="enableContact()">Contact</button>
-                <button @click="enableBiography()">Biographie</button>
             </div>
         </header>
         <div class="main-content" :class="{ noMargin: isProjectView }">
@@ -133,12 +140,12 @@ const isProjectView = computed(() => {
                             selectedCategory: store.activeCategory === category || !store.activeCategory,
                             selectedProject: !store.activeProject
                         }">
-                            {{ category }}</span>
+                            {{ $t(`categories.${category}`) }}</span>
                         <ul class="project-entries-container">
                             <li v-for="project in projectsByCategory[category]" :id="project._id" class="project-entry"
                                 :class="{ selectedProject: store.activeProject === project || !store.activeProject }"
                                 @click="onProjectSelection(project)">
-                                {{ project.title }}</li>
+                                {{ project.title[locale] }}</li>
                         </ul>
                     </li>
                 </ul>
@@ -151,10 +158,13 @@ const isProjectView = computed(() => {
             ref="contact">
             <div class="pop-up-header" @mousedown="startDrag(0, $event)">
                 <button class="exit" @click="disableContact()">x</button>
-                <p>Contact</p>
+                <p>{{ $t('contact.title') }}</p>
             </div>
             <div class="pop-up-content">
-                Text de contact qui apparait
+                Maude Bally <br><br>
+                <a href="https://www.instagram.com/maude_bally/" target="_blank">@maude_bally</a><br>
+                <a href="mailto:m.bally@infomaniak.ch">m.bally@infomaniak.ch</a><br>
+                <p>079/814.11.52</p>
             </div>
         </div>
 
@@ -164,10 +174,10 @@ const isProjectView = computed(() => {
             ref="biography">
             <div class="pop-up-header" @mousedown="startDrag(1, $event)">
                 <button class="exit" @click="disableBiography()">x</button>
-                <p>Biographie</p>
+                <p>{{ $t('bio.title') }}</p>
             </div>
             <div class="pop-up-content">
-                Text de biographie qui apparait
+                {{ $t('bio.text') }}
             </div>
         </div>
     </div>
@@ -266,4 +276,11 @@ li {
 .pop-up-content {
     padding: 0.5rem 1rem;
 }
+
+.pop-up-content a{
+    color: brown;
+    text-decoration: none;
+}
+
+/* -------------------------------------- MEDIA --------------------------------------------------- */
 </style>

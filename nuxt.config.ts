@@ -11,9 +11,14 @@ export default defineNuxtConfig({
       ]
     }
   },
-  modules: [
-    '@pinia/nuxt'
-  ],
+  modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
+  i18n: {
+    locales: [
+      { code: 'fr', name: 'Fr', file: 'fr.json' },
+      { code: 'en', name: 'En', file: 'en.json' }
+    ],
+    defaultLocale: 'fr',
+  },
   ssr: true,
   runtimeConfig: {
     mongoUri: process.env.MONGO_URI,

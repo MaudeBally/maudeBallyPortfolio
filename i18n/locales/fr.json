@@ -1,0 +1,21 @@
+{
+    "nav": {
+        "contact": "Contact",
+        "bio": "Biographie"
+    },
+
+    "contact": {
+        "title": "Contact"
+    },
+
+    "bio": {
+        "title": "Biographie",
+        "text": "Text de biographie qui apparait"
+    },
+
+    "categories": {
+        "collaborations": "Collaborations",
+        "clients": "Mandats",
+        "personnal": "Travaux personnels"
+    }
+}

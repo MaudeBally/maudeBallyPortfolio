@@ -11,23 +11,34 @@
             <form class="new-project-form" @submit.prevent="submitNewProject()">
                 <div class="input-container category-container">
                     <h3>Catégories</h3>
-                    <input v-model="categories" type="checkbox" id="travauxpersonnel" value="Travaux personnels" />
+                    <input v-model="categories" type="checkbox" id="travauxpersonnel" value="personnal" />
                     <label for="travauxpersonnel">Travaux Personnels</label><br><br>
-                    <input v-model="categories" type="checkbox" id="collaborations" value="Collaborations" />
+                    <input v-model="categories" type="checkbox" id="collaborations" value="collaborations" />
                     <label for="collaborations">Collaborations</label><br><br>
-                    <input v-model="categories" type="checkbox" id="mandats" value="Mandats" />
+                    <input v-model="categories" type="checkbox" id="mandats" value="clients" />
                     <label for="mandats">Mandats</label><br>
                     <span v-if="missingCategory" class="alert-message">Il faut choisir au moins une catégorie</span>
                 </div>
+
                 <div class="input-container title-container">
                     <h3>Titre du projet</h3>
-                    <input v-model="title" placeholder="Titre" style="width:90%" /><br>
+                    <h4>Français</h4>
+                    <input v-model="title.fr" placeholder="Titre FR" style="width:90%" />
+
+                    <h4>English</h4>
+                    <input v-model="title.en" placeholder="Title EN" style="width:90%" /><br>
                     <span v-if="missingTitle" class="alert-message">Il manque un titre</span>
                 </div>
+
                 <div class="input-container description-container">
                     <h3>Description du projet</h3>
-                    <textarea v-model="description" rows="5" placeholder="Description"></textarea>
+                    <h4>Français</h4>
+                    <textarea v-model="description.fr" rows="5" placeholder="Description FR"></textarea>
+
+                    <h4>English</h4>
+                    <textarea v-model="description.en" rows="5" placeholder="Description EN"></textarea>
                 </div>
+
                 <div class="input-container photos-container">
                     <h3>Photos</h3>
                     <input @change="addFile" id="photos" type="file" multiple accept="image/*" />
@@ -45,7 +56,7 @@
                                 </button>
                             </div>
                             <progress :value="progress[index]" max="100" class="upload-progress-bar">{{ progress[index]
-                                }}%</progress>
+                            }}%</progress>
                             <img :src="photo" alt="Preview" class="photo-preview">
                         </div>
                     </div>
@@ -63,9 +74,10 @@
                 <div class="thumbnail">
                     <img :src="'/projects/' + project._id + '/' + project.thumbnail">
                 </div>
-                <div class="title">{{ project.title }}</div>
+                <div class="title">{{ project.title[locale] }}</div>
                 <div class="category-container">
-                    <span v-for="category in project.category" class="category">{{ category }}</span>
+                    <span v-for="category in project.category" class="category">{{ $t(`categories.${category}`)
+                        }}</span>
                 </div>
                 <div class="project-buttons-container">
                     <button class="modify-button" @click="selectProjectToModify(project)">Modifier</button>
@@ -90,6 +102,8 @@ import axios from 'axios'
 import DeleteValidationComponent from '~/components/modals/DeleteValidationComponent.vue';
 import ModifyProjectComponent from '~/components/modals/ModifyProjectComponent.vue';
 
+const { locale } = useI18n()
+
 const projects = ref([])
 onMounted(async () => {
     try {
@@ -113,8 +127,14 @@ function closeNewProjectForm() {
     resetFields()
 }
 function resetFields() {
-    title.value = ""
-    description.value = ""
+    title.value = {
+        fr: "",
+        en: ""
+    }
+    description.value = {
+        fr: "",
+        en: ""
+    }
     categories.value = []
     photos.value = []
     thumbnailIndex.value = 0
@@ -122,8 +142,14 @@ function resetFields() {
     progress.value = []
 }
 
-const title = ref("")
-const description = ref("")
+const title = ref({
+    fr: "",
+    en: ""
+})
+const description = ref({
+    fr: "",
+    en: ""
+})
 const categories = ref([])
 const photos = ref([])
 const thumbnailIndex = ref(0)
@@ -169,15 +195,15 @@ const error = ref("");
 
 async function submitNewProject() {
     missingCategory.value = categories.value.length === 0
-    missingTitle.value = !title.value
+    missingTitle.value = !title.value.fr || !title.value.en
     missingPhotos.value = photos.value.length === 0
 
     //test que tous les champs obligatoires sont remplis
     if (missingCategory.value || missingTitle.value || missingPhotos.value) return
 
     const formData = new FormData()
-    formData.append('title', title.value)
-    formData.append('description', description.value)
+    formData.append('title', JSON.stringify(title.value))
+    formData.append('description', JSON.stringify(description.value))
     categories.value.sort().forEach(cat => {
         formData.append("category", cat)
     })

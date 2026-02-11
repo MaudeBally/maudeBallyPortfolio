@@ -1,7 +1,7 @@
 <template>
     <div class="overlay">
         <div class="modal">
-            <p>Voulez-vous vraiment supprimer {{ project.title }} ?</p>
+            <p>Voulez-vous vraiment supprimer {{ project.title[locale] }} ?</p>
             <div class="button-container">
                 <button @click="$emit('cancel')">Annuler</button>
                 <button @click="$emit('confirm')" class="delete">Supprimer</button>
@@ -12,6 +12,8 @@
 
 <script setup>
 defineProps({ project: Object })
+
+const { locale } = useI18n()
 </script>
 
 <style scoped>

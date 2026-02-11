@@ -37,8 +37,21 @@ export default defineEventHandler(async (event) => {
                 if (!project) return resolve({ success: false, message: 'Projet introuvable' })
 
                 // Champs à mettre à jour
-                const title = fields.title?.[0] || project.title
-                const description = fields.description?.[0] || project.description
+                let title = project.title
+                if (fields.title) {
+                    const rawTitle = fields.title[0] || fields.title
+                    title = JSON.parse(rawTitle)
+                }
+                if (!title.fr || !title.en) {
+                    return resolve({ success: false, message: "Titre incomplet (FR et EN requis)" })
+                }
+
+                let description = project.description
+                if (fields.description) {
+                    const rawDescription = fields.description[0] || fields.description
+                    description = JSON.parse(rawDescription)
+                }
+
                 const categories = fields.category || project.category
                 const deletePhotos = fields.deletePhotos ? JSON.parse(fields.deletePhotos[0]) : []
                 const thumbnail = fields.thumbnail?.[0] || project.thumbnail

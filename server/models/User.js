@@ -12,7 +12,7 @@ const UserSchema = new mongoose.Schema({
     }, // mot de passe haché
     role: {
         type: String,
-        default: "admin"
+        default: "user"
     }
 });
 

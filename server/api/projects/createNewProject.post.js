@@ -24,19 +24,36 @@ export default defineEventHandler(async (event) => {
       form.parse(event.node.req, async (err, fields, files) => {
         if (err) return reject(err)
 
-        const title = fields.title
-        const description = fields.description || ''
+        if (!fields.title) {
+          return resolve({ success: false, message: 'Titre requis' })
+        }
+
+        let parsedTitle
+        let parsedDescription = undefined
+
+        try {
+          parsedTitle = JSON.parse(fields.title[0] || fields.title)
+
+          if (fields.description) {
+            parsedDescription = JSON.parse(fields.description[0] || fields.description)
+          }
+        } catch (err) {
+          return resolve({ success: false, message: 'Format JSON invalide' })
+        }
+
+        if (!parsedTitle.fr || !parsedTitle.en) {
+          return resolve({ success: false, message: 'Titre FR et EN requis' })
+        }
         const categories = fields.category
         const thumbnail = fields.thumbnail
 
-        if (!title) return resolve({ success: false, message: 'Titre requis' })
         if (!categories.length) return resolve({ success: false, message: 'Categorie requise' })
         if (!files.photos) return resolve({ success: false, message: 'Photos requises' })
 
         // Créer projet dans la BDD
         const newProject = new Project({
-          title: title[0],
-          description: description[0],
+          title: parsedTitle,
+          description: parsedDescription,
           category: categories,
           photos: [],
           thumbnail: thumbnail[0],
@@ -63,8 +80,8 @@ export default defineEventHandler(async (event) => {
 
           const newPath = path.join(projectDir, finalName)
           fs.renameSync(file.filepath, newPath)
-          
-          if(originalName === newProject.thumbnail){
+
+          if (originalName === newProject.thumbnail) {
             savedProject.thumbnail = finalName
           }
 

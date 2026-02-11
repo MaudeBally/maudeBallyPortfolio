@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 
+const { locale } = useI18n()
+
 const { id } = useRoute().params
 
 const store = useProjectsStore()
@@ -27,8 +29,8 @@ onBeforeRouteLeave((to, from, next) => {
 
 <template>
     <div class="project-data-container">
-        <h2 class="project-title">{{ project.title }}</h2>
-        <p class="project-description">{{ project.description }}</p>
+        <h2 class="project-title">{{ project.title[locale] }}</h2>
+        <p class="project-description">{{ project.description[locale] }}</p>
         <div class="photos-container">
             <div v-for="photo in project.photos" class="photo-container">
                 <img :src="`/projects/${id}/${photo}`">
@@ -52,11 +54,14 @@ onBeforeRouteLeave((to, from, next) => {
 .photo-container {
     break-inside: avoid;
     margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
 }
 
 img {
-    width: 100%;
     display: block;
+    max-height: 80vh;
+    max-width: 100%;
 }
 
 .project-description {

@@ -1,31 +1,40 @@
 <template>
     <div class="overlay">
         <div class="modal">
-            <h1>{{ project.title }}</h1>
+            <h1>{{ project.title[locale] }}</h1>
             <form class="modify-project-form" @submit.prevent="submitEdit()">
 
                 <div class="input-container category-container">
                     <h3>Catégories</h3>
                     <input v-model="newProjectData.category" type="checkbox" id="travauxpersonnel"
-                        value="Travaux personnels" />
+                        value="personnal" />
                     <label for="travauxpersonnel">Travaux Personnels</label><br><br>
                     <input v-model="newProjectData.category" type="checkbox" id="collaborations"
-                        value="Collaborations" />
+                        value="collaborations" />
                     <label for="collaborations">Collaborations</label><br><br>
-                    <input v-model="newProjectData.category" type="checkbox" id="mandats" value="Mandats" />
+                    <input v-model="newProjectData.category" type="checkbox" id="mandats" value="clients" />
                     <label for="mandats">Mandats</label><br>
                     <span v-if="missingCategory" class="alert-message">Il faut choisir au moins une catégorie</span>
                 </div>
 
                 <div class="input-container title-container">
                     <h3>Titre du projet</h3>
-                    <input v-model="newProjectData.title" placeholder="Titre" style="width:90%" /><br>
+                    <h4>Français</h4>
+                    <input v-model="newProjectData.title.fr" placeholder="Titre FR" style="width:90%" />
+
+                    <h4>English</h4>
+                    <input v-model="newProjectData.title.en" placeholder="Title EN" style="width:90%" /><br>
                     <span v-if="missingTitle" class="alert-message">Il manque un titre</span>
                 </div>
 
                 <div class="input-container description-container">
                     <h3>Description du projet</h3>
-                    <textarea v-model="newProjectData.description" rows="5" placeholder="Description"></textarea>
+
+                    <h4>Français</h4>
+                    <textarea v-model="newProjectData.description.fr" rows="5" placeholder="Description FR"></textarea>
+
+                    <h4>English</h4>
+                    <textarea v-model="newProjectData.description.en" rows="5" placeholder="Description EN"></textarea>
                 </div>
 
                 <div class="input-container photos-container">
@@ -38,8 +47,10 @@
                             class="photo-container">
                             <div class="photo-button-container">
                                 <button type="button" class="infront-photo" @click="addPhotoAsThumbnail(index)">
-                                    <font-awesome-icon v-show="thumbnailIndexComputed  !== index" icon="fa-regular fa-star" />
-                                    <font-awesome-icon v-show="thumbnailIndexComputed  === index" icon="fa-solid fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndexComputed !== index"
+                                        icon="fa-regular fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndexComputed === index"
+                                        icon="fa-solid fa-star" />
                                 </button>
                                 <button type="button" class="delete-photo" @click="removePhoto(photo.id)">
                                     <font-awesome-icon icon="fa-solid fa-xmark" />
@@ -64,11 +75,19 @@ import { watchEffect, ref, onMounted } from 'vue'
 import axios from 'axios'
 const props = defineProps({ project: Object })
 
+const { locale } = useI18n()
+
 const emit = defineEmits(['updated'])
 
 const newProjectData = ref({
-    title: props.project.title,
-    description: props.project.description,
+    title: {
+        fr: props.project.title?.fr || "",
+        en: props.project.title?.en || ""
+    },
+    description: {
+        fr: props.project.description?.fr || "",
+        en: props.project.description?.en || ""
+    },
     category: [...props.project.category],
     photos: props.project.photos.map((url, i) => ({
         id: `existing-${i}`,  // identifiant unique pour Vue
@@ -160,7 +179,7 @@ const error = ref("")
 
 async function submitEdit() {
     missingCategory.value = newProjectData.value.category.length === 0
-    missingTitle.value = !newProjectData.value.title
+    missingTitle.value = !newProjectData.value.title.fr || !newProjectData.value.title.en
     missingPhotos.value = newProjectData.value.photos.every(photo => photo.toDelete)
 
     //test que tous les champs obligatoires sont remplis
@@ -169,8 +188,8 @@ async function submitEdit() {
     const formData = new FormData()
 
     formData.append("id", props.project._id)
-    formData.append('title', newProjectData.value.title)
-    formData.append('description', newProjectData.value.description)
+    formData.append('title', JSON.stringify(newProjectData.value.title))
+    formData.append('description', JSON.stringify(newProjectData.value.description))
     newProjectData.value.category.sort().forEach(cat => {
         formData.append("category", cat)
     })
@@ -214,7 +233,6 @@ watchEffect(() => {
     if (newProjectData.value.photos.length > 0) {
         missingPhotos.value = false
     }
-    console.log(newProjectData.value.photos)
 })
 </script>
 
@@ -239,6 +257,12 @@ watchEffect(() => {
     padding: 20px;
     border-radius: 10px;
     overflow-y: scroll;
+}
+
+.modify-project-form {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
 }
 
 .alert-message {
