@@ -1,24 +1,39 @@
 <template>
-    <div class="portfolio-container">
-        <div v-for="(col, colIndex) in columns" :key="colIndex" class="portfolio-container-col"
-            :class="`col${colIndex + 1}`">
-            <div v-for="project in col" :key="project._id" class="project-container">
-                <img class="thumbnail" :src="`/projects/${project._id}/${project.thumbnail}`" :alt="project.name"
-                    @click="navigateToProject(project._id)" />
-            </div>
+    <div class="portfolio-container" :style="{ gridTemplateColumns: `repeat(${columnsNb}, 1fr)` }" >
+        <div v-for=" (col, colIndex) in columns" :key="colIndex" class="portfolio-container-col"
+        :class="`col${colIndex + 1}`">
+        <div v-for="project in col" :key="project._id" class="project-container">
+            <img class="thumbnail" :src="`/projects/${project._id}/${project.thumbnail}`" :alt="project.name"
+                @click="navigateToProject(project._id)" />
         </div>
+    </div>
     </div>
 </template>
 
 <script setup>
-import { ref, watchEffect } from 'vue'
+import { useWindowSize } from '@vueuse/core'
+const { width, height } = useWindowSize()
 
 const store = useProjectsStore()
 await store.fetchProjects()
 
+const columnsNb = computed(() => {
+    if (width.value < 700) {
+        return 1
+    }
+    if (width.value < 1000) {
+        return 2
+    }
+    return 3
+})
+
 const columns = computed(() => {
-    const cols = [[], [], []]
-    store.filteredProjects.forEach((p, i) => cols[i % 3].push(p))
+    const cols = Array.from({ length: columnsNb.value }, () => [])
+
+    store.filteredProjects.forEach((p, i) => {
+        cols[i % columnsNb.value].push(p)
+    })
+
     return cols
 })
 
@@ -32,7 +47,6 @@ function navigateToProject(id) {
 .portfolio-container {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
     margin-bottom: 50px;
 }
 

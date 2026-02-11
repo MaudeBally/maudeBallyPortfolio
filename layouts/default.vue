@@ -126,8 +126,8 @@ const isProjectView = computed(() => {
                 <button @click="enableContact()">{{ $t('nav.contact') }}</button>
                 <button @click="enableBiography()">{{ $t('nav.bio') }}</button>
                 <div class="language-picker">
-                    <button v-for="locale in locales" @click="setLocale(locale.code)">
-                        {{ locale.name }}
+                    <button v-for="localeI in locales" :class="{ active: locale === localeI.code }" @click="setLocale(localeI.code)">
+                        {{ localeI.name }}
                     </button>
                 </div>
             </div>
@@ -194,6 +194,8 @@ header {
     top: 0;
     background-color: white;
     z-index: 3;
+    flex-wrap: wrap;
+    row-gap: 10px;
 }
 
 .title {
@@ -205,6 +207,11 @@ header {
 .nav {
     display: flex;
     gap: 1rem;
+    margin-left: auto;
+}
+
+.active {
+    font-weight: 600;
 }
 
 .main-content {
@@ -283,4 +290,13 @@ li {
 }
 
 /* -------------------------------------- MEDIA --------------------------------------------------- */
+@media (max-width: 550px){
+    .filter-container{
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+}
 </style>

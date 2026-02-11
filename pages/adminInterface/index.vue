@@ -406,7 +406,7 @@ watchEffect(() => {
 .new-project-form {
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 50px;
     width: 100%;
 }
 
