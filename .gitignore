@@ -24,4 +24,4 @@ logs
 !.env.example
 
 # Creation of admin route
-\server\api\create-admin.post.js
+server/api/create-admin-temp.post.js
