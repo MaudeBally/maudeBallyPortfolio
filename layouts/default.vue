@@ -92,9 +92,6 @@ await store.fetchProjects()
 const categories = ref(store.categories)
 const projectsByCategory = ref(store.projectsByCategory)
 
-console.log(categories.value)
-console.log(projectsByCategory.value)
-
 const route = useRoute()
 const isBlocked = computed(() => route.name.includes("projects-id"))
 

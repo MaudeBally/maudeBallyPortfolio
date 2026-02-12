@@ -56,7 +56,7 @@
                                 </button>
                             </div>
                             <progress :value="progress[index]" max="100" class="upload-progress-bar">{{ progress[index]
-                            }}%</progress>
+                                }}%</progress>
                             <img :src="photo" alt="Preview" class="photo-preview">
                         </div>
                     </div>
@@ -71,13 +71,15 @@
 
         <div v-if="!newProjectPageOpen" class="projects-container">
             <div v-for="project in projects" :key="project._id" class="project-container">
-                <div class="thumbnail">
-                    <img :src="'/projects/' + project._id + '/' + project.thumbnail">
-                </div>
-                <div class="title">{{ project.title[locale] }}</div>
-                <div class="category-container">
-                    <span v-for="category in project.category" class="category">{{ $t(`categories.${category}`)
-                        }}</span>
+                <div class="project-data">
+                    <div class="thumbnail">
+                        <img :src="'/projects/' + project._id + '/' + project.thumbnail">
+                    </div>
+                    <div class="title">{{ project.title[locale] }}</div>
+                    <div class="category-container">
+                        <span v-for="category in project.category" class="category">{{ $t(`categories.${category}`)
+                            }}</span>
+                    </div>
                 </div>
                 <div class="project-buttons-container">
                     <button class="modify-button" @click="selectProjectToModify(project)">Modifier</button>
@@ -210,10 +212,6 @@ async function submitNewProject() {
     photos.value.forEach(file => formData.append('photos', file))
     formData.append('thumbnail', photos.value[thumbnailIndex.value].name)
 
-    formData.forEach(data => {
-        console.log(data)
-    })
-
     const res = await axios.post('/api/projects/createNewProject', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (event) => {
@@ -323,22 +321,28 @@ watchEffect(() => {
 }
 
 .project-container {
-    height: 140px;
+    min-height: 140px;
     width: 100%;
     padding: 10px 0 10px 0;
     border-top: solid 1px black;
-    display: grid;
-    grid-template-columns: 130px 1fr 1fr 1fr;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
 
 .project-container>div:not(:last-child) {
     height: 75%;
-    border-right: solid 1px black;
 }
 
 .project-container>div:first-child {
     border-right: none;
+}
+
+.project-data {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    row-gap: 10px;
 }
 
 .thumbnail {
@@ -365,7 +369,7 @@ watchEffect(() => {
 .project-container .category-container {
     display: flex;
     align-items: center;
-    padding-left: 15px;
+    flex-wrap: wrap;
 }
 
 .category:not(:first-child) {

@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { useWindowSize } from '@vueuse/core'
 
 const { locale } = useI18n()
 
@@ -25,13 +26,21 @@ onBeforeRouteLeave((to, from, next) => {
     store.setProject(null) // supprime selectedProject
     next() // continue la navigation
 })
+
+const { width, height } = useWindowSize()
+const columnsNb = computed(() => {
+    if (width.value < 700) {
+        return 1
+    }
+    return 2
+})
 </script>
 
 <template>
     <div class="project-data-container">
         <h2 class="project-title">{{ project.title[locale] }}</h2>
         <p class="project-description">{{ project.description[locale] }}</p>
-        <div class="photos-container">
+        <div class="photos-container" :style="{ columnCount: columnsNb }">
             <div v-for="photo in project.photos" class="photo-container">
                 <img :src="`/projects/${id}/${photo}`">
             </div>
@@ -47,7 +56,6 @@ onBeforeRouteLeave((to, from, next) => {
 .photos-container {
     width: 100%;
     margin: 30px 0;
-    column-count: 2;
     column-gap: 20px;
 }
 

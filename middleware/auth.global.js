@@ -4,7 +4,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const res = await $fetch("/api/me", {
       headers
     })
-    console.log(res)
     if (!res.loggedIn) {
       return navigateTo("/behindTheScene");
     }
