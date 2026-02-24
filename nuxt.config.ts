@@ -7,7 +7,7 @@ export default defineNuxtConfig({
     head: {
       title: 'Maude Bally',
       meta: [
-        {name: 'description', content: 'portfolio for Maude Bally'}
+        { name: 'description', content: 'portfolio for Maude Bally' }
       ]
     }
   },
@@ -20,6 +20,9 @@ export default defineNuxtConfig({
     defaultLocale: 'fr',
   },
   ssr: true,
+  nitro: {
+    preset: 'node-server',
+  },
   runtimeConfig: {
     mongoUri: process.env.MONGO_URI,
     jwt_secret: process.env.JWT_SECRET
