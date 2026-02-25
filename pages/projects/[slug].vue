@@ -4,18 +4,18 @@ import { useWindowSize } from '@vueuse/core'
 
 const { locale } = useI18n()
 
-const { id } = useRoute().params
+const { slug } = useRoute().params
 
 const store = useProjectsStore()
 // Vérifie si les projets sont déjà chargés (par ex. depuis la page d’accueil)
 await store.fetchProjects()
 
 // Essaie de trouver le projet dans le store
-const project = ref(store.projects.find(p => p._id === id))
+const project = ref(store.projects.find(p => p.slug === slug))
 
 // Si non trouvé → fetch directement le projet via API
 if (!project.value) {
-    const res = await $fetch(`/api/projects/${id}`)
+    const res = await $fetch(`/api/projects/${slug}`)
     project.value = res.project || null
 }
 
@@ -42,7 +42,7 @@ const columnsNb = computed(() => {
         <p class="project-description">{{ project.description[locale] }}</p>
         <div class="photos-container" :style="{ columnCount: columnsNb }">
             <div v-for="photo in project.photos" class="photo-container">
-                <img :src="`/projects/${id}/${photo}`">
+                <img :src="photo.url">
             </div>
         </div>
     </div>

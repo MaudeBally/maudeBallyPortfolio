@@ -8,7 +8,10 @@ export default defineNuxtConfig({
       title: 'Maude Bally',
       meta: [
         { name: 'description', content: 'portfolio for Maude Bally' }
-      ]
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+      ],
     }
   },
   modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
@@ -18,13 +21,23 @@ export default defineNuxtConfig({
       { code: 'en', name: 'En', file: 'en.json' }
     ],
     defaultLocale: 'fr',
+    strategy: 'prefix', // important : met le code langue dans l'URL
+    langDir: 'locales/', // dossier contenant fr.json et en.json
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root' // redirige automatiquement la racine
+    }
   },
   ssr: true,
   nitro: {
-    preset: 'node-server',
+    preset: 'vercel',
   },
   runtimeConfig: {
     mongoUri: process.env.MONGO_URI,
-    jwt_secret: process.env.JWT_SECRET
+    jwt_secret: process.env.JWT_SECRET,
+    public: {
+      baseURL: process.env.BASE_URL
+    }
   }
 })

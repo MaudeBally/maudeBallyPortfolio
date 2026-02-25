@@ -6,8 +6,7 @@
 
                 <div class="input-container category-container">
                     <h3>Catégories</h3>
-                    <input v-model="newProjectData.category" type="checkbox" id="travauxpersonnel"
-                        value="personnal" />
+                    <input v-model="newProjectData.category" type="checkbox" id="travauxpersonnel" value="personnal" />
                     <label for="travauxpersonnel">Travaux Personnels</label><br><br>
                     <input v-model="newProjectData.category" type="checkbox" id="collaborations"
                         value="collaborations" />
@@ -46,10 +45,10 @@
                         <div v-for="(photo, index) in newProjectData.photos" :key="photo.id" v-show="!photo.toDelete"
                             class="photo-container">
                             <div class="photo-button-container">
-                                <button type="button" class="infront-photo" @click="addPhotoAsThumbnail(index)">
-                                    <font-awesome-icon v-show="thumbnailIndexComputed !== index"
+                                <button type="button" class="infront-photo" @click="setThumbnail(index)">
+                                    <font-awesome-icon v-show="thumbnailIndex !== index"
                                         icon="fa-regular fa-star" />
-                                    <font-awesome-icon v-show="thumbnailIndexComputed === index"
+                                    <font-awesome-icon v-show="thumbnailIndex === index"
                                         icon="fa-solid fa-star" />
                                 </button>
                                 <button type="button" class="delete-photo" @click="removePhoto(photo.id)">
@@ -89,42 +88,26 @@ const newProjectData = ref({
         en: props.project.description?.en || ""
     },
     category: [...props.project.category],
-    photos: props.project.photos.map((url, i) => ({
+    photos: props.project.photos.map((p, i) => ({
         id: `existing-${i}`,  // identifiant unique pour Vue
-        src: `/projects/${props.project._id}/${url}`,
+        src: p.url,
         type: 'existing',     // ou 'new'
-        name: url,            // utile pour suppression côté serveur
+        name: p.public_id,            // utile pour suppression côté serveur
         file: null,
         toDelete: false,
     })),
-    thumbnail: props.project.thumbnail
 })
 
-const thumbnailId = ref(null)
-const thumbnailIndexComputed = computed(() =>
-    newProjectData.value.photos.findIndex(p => p.id === thumbnailId.value)
-)
+const thumbnailIndex = ref(0)
+
+// Initialise thumbnailIndex sur montage
 onMounted(() => {
-    if (newProjectData.value.thumbnail) {
-        const found = newProjectData.value.photos.find(p => p.name === newProjectData.value.thumbnail)
-        if (found) thumbnailId.value = found.id
-        else thumbnailId.value = null
-    } else {
-        //si pas de thumbnail, on prend la première photo non supprimée
-        const first = newProjectData.value.photos.find(p => !p.toDelete)
-        if (first) {
-            thumbnailId.value = first.id
-            newProjectData.value.thumbnail = first.name || first.file?.name || ''
-        }
+    const thumb = props.project.thumbnail?.public_id
+    if (thumb) {
+        const index = newProjectData.value.photos.findIndex(p => p.name === thumb)
+        if (index !== -1) thumbnailIndex.value = index
     }
 })
-
-function addPhotoAsThumbnail(index) {
-    const photo = newProjectData.value.photos[index]
-    if (!photo) return
-    thumbnailId.value = photo.id
-    newProjectData.value.thumbnail = photo.type === 'existing' ? photo.name : (photo.file?.name || photo.name)
-}
 
 function handleAddPhotos(event) {
     const files = Array.from(event.target.files)
@@ -133,14 +116,14 @@ function handleAddPhotos(event) {
         src: URL.createObjectURL(file),
         type: 'new',
         file,
+        name: file.name,
         toDelete: false,
     }))
     newProjectData.value.photos.push(...newPhotos)
 
     // Si on n'avait pas de thumbnail, définir la première nouvelle comme thumbnail
-    if (!thumbnailId.value && newPhotos.length) {
-        thumbnailId.value = newPhotos[0].id
-        newProjectData.value.thumbnail = newPhotos[0].name
+    if (newProjectData.value.photos.length === newPhotos.length) {
+        thumbnailIndex.value = 0
     }
 }
 
@@ -157,19 +140,15 @@ function removePhoto(photoId) {
         newProjectData.value.photos.splice(index, 1)
     }
 
-    // Si on a supprimé (ou marqué) l'image qui était thumbnail, réajuster
-    if (photoId === thumbnailId.value) {
-        // cherche la première photo non marquée toDelete
-        const firstAvailable = newProjectData.value.photos.find(p => !p.toDelete)
-        if (firstAvailable) {
-            thumbnailId.value = firstAvailable.id
-            newProjectData.value.thumbnail = firstAvailable.type === 'existing' ? firstAvailable.name : (firstAvailable.file?.name || firstAvailable.name)
-        } else {
-            // aucune photo restante
-            thumbnailId.value = null
-            newProjectData.value.thumbnail = ''
-        }
+    // Ajuster thumbnailIndex si nécessaire
+    if (index === thumbnailIndex.value) {
+        const firstAvailable = newProjectData.value.photos.findIndex(p => !p.toDelete)
+        thumbnailIndex.value = firstAvailable !== -1 ? firstAvailable : 0
     }
+}
+
+function setThumbnail(index) {
+    thumbnailIndex.value = index
 }
 
 const missingCategory = ref(false)
@@ -194,11 +173,6 @@ async function submitEdit() {
         formData.append("category", cat)
     })
 
-    //For thumbnail
-    if (newProjectData.value.thumbnail) {
-        formData.append('thumbnail', newProjectData.value.thumbnail)
-    }
-
     // nouvelles images à uploader
     newProjectData.value.photos
         .filter(p => p.type === 'new')
@@ -211,6 +185,9 @@ async function submitEdit() {
     if (toDelete.length) {
         formData.append('deletePhotos', JSON.stringify(toDelete))
     }
+
+    //On envoie l'index du thumbnail
+    formData.append('thumbnailIndex', thumbnailIndex.value)
 
     const res = await axios.put(`/api/projects/updateProject`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

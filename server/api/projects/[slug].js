@@ -4,10 +4,10 @@ import Project from '~/server/models/Project'
 export default defineEventHandler(async (event) => {
     await connectDB();
 
-    // Récupère l'id depuis l'URL
-    const { id } = event.context.params
+    // Récupère le slug depuis l'URL
+    const { slug } = event.context.params
     try {
-        const project = Project.find((p) => p._id === id)
+        const project = await Project.findOne({ slug })
         if (!project) {
             return { success: false, message: "Projet introuvable" }
         }

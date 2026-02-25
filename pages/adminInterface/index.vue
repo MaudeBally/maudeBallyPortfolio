@@ -56,7 +56,7 @@
                                 </button>
                             </div>
                             <progress :value="progress[index]" max="100" class="upload-progress-bar">{{ progress[index]
-                                }}%</progress>
+                            }}%</progress>
                             <img :src="photo" alt="Preview" class="photo-preview">
                         </div>
                     </div>
@@ -73,12 +73,12 @@
             <div v-for="project in projects" :key="project._id" class="project-container">
                 <div class="project-data">
                     <div class="thumbnail">
-                        <img :src="'/projects/' + project._id + '/' + project.thumbnail">
+                        <img :src="project.thumbnail.url">
                     </div>
                     <div class="title">{{ project.title[locale] }}</div>
                     <div class="category-container">
                         <span v-for="category in project.category" class="category">{{ $t(`categories.${category}`)
-                            }}</span>
+                        }}</span>
                     </div>
                 </div>
                 <div class="project-buttons-container">
@@ -210,7 +210,7 @@ async function submitNewProject() {
         formData.append("category", cat)
     })
     photos.value.forEach(file => formData.append('photos', file))
-    formData.append('thumbnail', photos.value[thumbnailIndex.value].name)
+    formData.append('thumbnailIndex', thumbnailIndex.value)
 
     const res = await axios.post('/api/projects/createNewProject', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

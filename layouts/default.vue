@@ -93,7 +93,7 @@ const categories = ref(store.categories)
 const projectsByCategory = ref(store.projectsByCategory)
 
 const route = useRoute()
-const isBlocked = computed(() => route.name.includes("projects-id"))
+const isBlocked = computed(() => route.name.includes("projects-slug"))
 
 function onCategoryChange(category) {
     if (!isBlocked.value) {
@@ -103,14 +103,14 @@ function onCategoryChange(category) {
 
 function onProjectSelection(project) {
     if (project.category.includes(store.activeCategory) || !store.activeCategory) {
-        navigateTo(`/projects/${project._id}`)
+        navigateTo(`${locale.value}/projects/${project.slug}`)
         store.setCategory(null)
     }
 }
 
 /* ----------------------------------------------------- HIDE FILTERS ON PROJECT ---------------------------------------------------------- */
 const isProjectView = computed(() => {
-    return route.name.includes("projects-id") 
+    return route.name.includes("projects-slug")
 })
 
 </script>
@@ -118,7 +118,7 @@ const isProjectView = computed(() => {
 <template>
     <div>
         <header>
-            <NuxtLink class="title" to="/">Maude Bally</NuxtLink>
+            <NuxtLink class="title" :to="`/${locale}`">Maude Bally</NuxtLink>
             <div class="nav">
                 <button @click="enableContact()">{{ $t('nav.contact') }}</button>
                 <button @click="enableBiography()">{{ $t('nav.bio') }}</button>

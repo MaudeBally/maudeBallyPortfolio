@@ -1,18 +1,20 @@
 <template>
-    <div class="portfolio-container" :style="{ gridTemplateColumns: `repeat(${columnsNb}, 1fr)` }" >
-        <div v-for=" (col, colIndex) in columns" :key="colIndex" class="portfolio-container-col"
-        :class="`col${colIndex + 1}`">
-        <div v-for="project in col" :key="project._id" class="project-container">
-            <img class="thumbnail" :src="`/projects/${project._id}/${project.thumbnail}`" :alt="project.name"
-                @click="navigateToProject(project._id)" />
+    <div class="portfolio-container" :style="{ gridTemplateColumns: `repeat(${columnsNb}, 1fr)` }">
+        <div v-for="(col, colIndex) in columns" :key="colIndex" class="portfolio-container-col"
+            :class="`col${colIndex + 1}`">
+            <div v-for="project in col" :key="project._id" class="project-container">
+                <img class="thumbnail" :src="project.thumbnail.url" :alt="project.name"
+                    @click="navigateToProject(project.slug)" />
+            </div>
         </div>
-    </div>
     </div>
 </template>
 
 <script setup>
 import { useWindowSize } from '@vueuse/core'
 const { width, height } = useWindowSize()
+
+const { locale } = useI18n()
 
 const store = useProjectsStore()
 await store.fetchProjects()
@@ -37,8 +39,8 @@ const columns = computed(() => {
     return cols
 })
 
-function navigateToProject(id) {
-    navigateTo(`/projects/${id}`)
+function navigateToProject(slug) {
+    navigateTo(`${locale.value}/projects/${slug}`)
     store.setCategory(null)
 }
 </script>

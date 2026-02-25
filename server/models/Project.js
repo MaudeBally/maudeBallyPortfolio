@@ -17,27 +17,34 @@ const OptionalTranslatedStringSchema = new mongoose.Schema(
 )
 
 const ProjectSchema = new mongoose.Schema({
-    category: {
-        type: [String],
-        enum: ["personnal", "collaborations", "clients"],
-        required: true
-    },
-    title: {
-        type: RequiredTranslatedStringSchema,
-        required: true
-    },
-    description: {
-        type: OptionalTranslatedStringSchema,
-        required: false
-    },
-    photos: {
-        type: [String],
-        required: true
-    },
-    thumbnail: {
-        type: String,
-        required: true
+  category: {
+    type: [String],
+    enum: ["personnal", "collaborations", "clients"],
+    required: true
+  },
+  slug: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  title: {
+    type: RequiredTranslatedStringSchema,
+    required: true
+  },
+  description: {
+    type: OptionalTranslatedStringSchema,
+    required: false
+  },
+  photos: [
+    {
+      url: String,
+      public_id: String
     }
+  ],
+  thumbnail: {
+    url: String,
+    public_id: String
+  }
 });
 
 export default mongoose.models.Project || mongoose.model("Project", ProjectSchema);
