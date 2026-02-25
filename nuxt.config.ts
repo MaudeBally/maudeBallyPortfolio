@@ -35,9 +35,6 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     mongoUri: process.env.MONGO_URI,
-    jwt_secret: process.env.JWT_SECRET,
-    public: {
-      baseURL: process.env.BASE_URL
-    }
+    jwt_secret: process.env.JWT_SECRET
   }
 })
