@@ -55,11 +55,15 @@
                                     <font-awesome-icon icon="fa-solid fa-xmark" />
                                 </button>
                             </div>
-                            <progress :value="progress[index]" max="100" class="upload-progress-bar">{{ progress[index]
-                            }}%</progress>
+                            <progress :value="progress" max="100" class="upload-progress-bar">{{ progress }}%</progress>
                             <img :src="photo" alt="Preview" class="photo-preview">
                         </div>
                     </div>
+                </div>
+                <div class="finalizing-upload-message-container">
+                    <p v-if="isProcessing" class="finalizing-upload-message">
+                        Upload terminé — traitement des images en cours...
+                    </p>
                 </div>
                 <div class="new-project-buttons-container">
                     <button type="button" class="cancel-button" @click="closeNewProjectForm()">Annuler</button>
@@ -78,7 +82,7 @@
                     <div class="title">{{ project.title[locale] }}</div>
                     <div class="category-container">
                         <span v-for="category in project.category" class="category">{{ $t(`categories.${category}`)
-                        }}</span>
+                            }}</span>
                     </div>
                 </div>
                 <div class="project-buttons-container">
@@ -142,6 +146,7 @@ function resetFields() {
     thumbnailIndex.value = 0
     previewUrls.value = []
     progress.value = []
+    isProcessing.value = false
 }
 
 const title = ref({
@@ -156,19 +161,55 @@ const categories = ref([])
 const photos = ref([])
 const thumbnailIndex = ref(0)
 const previewUrls = ref([])
-const progress = ref([])
+const progress = ref(0)
+const isProcessing = ref(false)
+
+//Compression d'images
+async function compressImage(file, maxSizeMB = 10, qualityStep = 0.05) {
+    return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = async () => {
+            let canvas = document.createElement('canvas')
+            let ctx = canvas.getContext('2d')
+            let [width, height] = [img.width, img.height]
+            canvas.width = width
+            canvas.height = height
+            ctx.drawImage(img, 0, 0, width, height)
+
+            let quality = 0.9
+            let blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality))
+
+            while (blob.size > maxSizeMB * 1024 * 1024 && quality > 0.05) {
+                quality -= qualityStep
+                blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality))
+            }
+
+            if (blob.size > maxSizeMB * 1024 * 1024) {
+                return reject(new Error(`Image trop grande après compression : ${file.name}`))
+            }
+
+            // Conserver le nom original
+            blob.name = file.name
+            resolve(blob)
+        }
+        img.onerror = (e) => reject(e)
+        img.src = URL.createObjectURL(file)
+    })
+}
 
 // Ajouter des images
-function addFile(e) {
+async function addFile(e) {
     const selectedFiles = Array.from(e.target.files)
-    // Ajouter les nouveaux fichiers au tableau existant
-    photos.value.push(...selectedFiles)
-    // Générer les URLs de prévisualisation
-    const newPreviews = selectedFiles.map(file => URL.createObjectURL(file))
-    previewUrls.value.push(...newPreviews)
-    //Pour la barre de progression
-    selectedFiles.forEach(() => progress.value.push(0))
-    // Réinitialiser l'input pour que le même fichier puisse être re-uploadé
+
+    for (let file of selectedFiles) {
+        try {
+            const compressed = await compressImage(file, 10) // 10 Mo max
+            photos.value.push(compressed)
+            previewUrls.value.push(URL.createObjectURL(compressed))
+        } catch (err) {
+            console.warn(err.message)
+        }
+    }
     e.target.value = ''
 }
 
@@ -177,7 +218,6 @@ function removeImage(index) {
     photos.value.splice(index, 1)
     URL.revokeObjectURL(previewUrls.value[index]) // libère la mémoire
     previewUrls.value.splice(index, 1)
-    progress.value.splice(index, 1)
     if (thumbnailIndex.value < 0 || index === thumbnailIndex.value) {
         thumbnailIndex.value = 0
     }
@@ -216,14 +256,16 @@ async function submitNewProject() {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (event) => {
             if (event.total) {
-                const percent = Math.round((event.loaded / event.total) * 100)
-                progress.value = photos.value.map(() => percent)
+                progress.value = Math.round((event.loaded / event.total) * 100)
+                if (progress.value === 100) {
+                    isProcessing.value = true
+                }
             }
         }
     })
 
     if (!res.data.success) {
-        error.value = res.message;
+        error.value = res.data.message;
     } else {
         projects.value.unshift(res.data.project)
         closeNewProjectForm();
@@ -240,6 +282,7 @@ watchEffect(() => {
     if (photos.value.length > 0) {
         missingPhotos.value = false
     }
+    console.log(progress.value)
 })
 
 /* ----------------------------------------------- DELETE MANAGEMENT ------------------------------------------- */
@@ -493,6 +536,10 @@ textarea {
 
 .cancel-button {
     color: red;
+}
+
+.finalizing-upload-message {
+    text-align: center;
 }
 
 button {

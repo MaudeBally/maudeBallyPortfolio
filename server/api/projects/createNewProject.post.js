@@ -74,41 +74,40 @@ export default defineEventHandler(async (event) => {
         const savedProject = await newProject.save()
         const projectSlug = savedProject.slug.toString()
 
-        const uploadedFiles = []
         const fileArray = Array.isArray(files.photos) ? files.photos : [files.photos]
 
-        const thumbnailIndex = parseInt(fields.thumbnailIndex?.[0] || fields.thumbnailIndex || 0)
-
-        for (let i = 0; i < fileArray.length; i++) {
-          const file = fileArray[i]
+        const uploadPromises = fileArray.map((file, index) => {
           const originalName = file.originalFilename || file.newFilename
           const extension = originalName.split('.').pop()
           const baseName = originalName.replace(`.${extension}`, '')
-
           const safeName = slugify(baseName, { lower: true, strict: true })
 
-          const uploadResult = await cloudinary.uploader.upload(
+          return cloudinary.uploader.upload(
             file.filepath,
             {
               folder: `projects/${projectSlug}`,
               public_id: `${Date.now()}-${safeName}`,
               resource_type: "image"
             }
-          )
+          ).then(result => ({
+            url: result.secure_url,
+            public_id: result.public_id,
+            index
+          }))
+        })
 
-          const imageData = {
-            url: uploadResult.secure_url,
-            public_id: uploadResult.public_id
-          }
+        const uploadedFiles = await Promise.all(uploadPromises)
 
-          uploadedFiles.push(imageData)
 
-          if (i === thumbnailIndex) {
-            savedProject.thumbnail = imageData
-          }
-        }
+        const thumbnailIndex = parseInt(fields.thumbnailIndex?.[0] || fields.thumbnailIndex || 0)
 
-        savedProject.photos = uploadedFiles
+        savedProject.photos = uploadedFiles.map(f => ({
+          url: f.url,
+          public_id: f.public_id
+        }))
+
+        savedProject.thumbnail = uploadedFiles[thumbnailIndex] || uploadedFiles[0]
+
         await savedProject.save()
 
         resolve({ success: true, project: savedProject })
