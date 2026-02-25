@@ -46,10 +46,8 @@
                             class="photo-container">
                             <div class="photo-button-container">
                                 <button type="button" class="infront-photo" @click="setThumbnail(index)">
-                                    <font-awesome-icon v-show="thumbnailIndex !== index"
-                                        icon="fa-regular fa-star" />
-                                    <font-awesome-icon v-show="thumbnailIndex === index"
-                                        icon="fa-solid fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndex !== index" icon="fa-regular fa-star" />
+                                    <font-awesome-icon v-show="thumbnailIndex === index" icon="fa-solid fa-star" />
                                 </button>
                                 <button type="button" class="delete-photo" @click="removePhoto(photo.id)">
                                     <font-awesome-icon icon="fa-solid fa-xmark" />
@@ -72,6 +70,7 @@
 <script setup>
 import { watchEffect, ref, onMounted } from 'vue'
 import axios from 'axios'
+import slugify from 'slugify'
 const props = defineProps({ project: Object })
 
 const { locale } = useI18n()
@@ -164,41 +163,64 @@ async function submitEdit() {
     //test que tous les champs obligatoires sont remplis
     if (missingCategory.value || missingTitle.value || missingPhotos.value) return
 
-    const formData = new FormData()
-
-    formData.append("id", props.project._id)
-    formData.append('title', JSON.stringify(newProjectData.value.title))
-    formData.append('description', JSON.stringify(newProjectData.value.description))
-    newProjectData.value.category.sort().forEach(cat => {
-        formData.append("category", cat)
+    // Générer le nouveau slug basé sur le titre FR
+    const newSlug = slugify(newProjectData.value.title.fr, {
+        lower: true,
+        strict: true
     })
 
-    // nouvelles images à uploader
-    newProjectData.value.photos
-        .filter(p => p.type === 'new')
-        .forEach(p => formData.append('newPhotos', p.file))
+    // Séparer les nouvelles images
+    const newPhotos = newProjectData.value.photos.filter(p => p.type === 'new')
 
-    // anciennes images à supprimer
-    const toDelete = newProjectData.value.photos
+    // Upload direct vers Cloudinary
+    const uploadedPhotos = await Promise.all(newPhotos.map(p => {
+        const form = new FormData()
+        form.append('file', p.file)
+        form.append('upload_preset', 'projects_unsigned')
+        form.append('folder', `projects/${newSlug}`)
+
+        return fetch('https://api.cloudinary.com/v1_1/dajg37al1/image/upload', {
+            method: 'POST',
+            body: form
+        })
+            .then(res => res.json())
+            .then(data => ({ url: data.secure_url, public_id: data.public_id }))
+    }))
+
+    // Photos existantes conservées
+    const existingPhotos = newProjectData.value.photos
+        .filter(p => p.type === 'existing' && !p.toDelete)
+        .map(p => ({
+            url: p.src,
+            public_id: p.name
+        }))
+
+    const deletePhotos = newProjectData.value.photos
         .filter(p => p.type === 'existing' && p.toDelete)
         .map(p => p.name)
-    if (toDelete.length) {
-        formData.append('deletePhotos', JSON.stringify(toDelete))
+
+    const payload = {
+        id: props.project._id,
+        title: newProjectData.value.title,
+        description: newProjectData.value.description,
+        category: newProjectData.value.category,
+        photos: uploadedPhotos, // seulement les nouvelles
+        deletePhotos,
+        thumbnailIndex: thumbnailIndex.value
     }
 
-    //On envoie l'index du thumbnail
-    formData.append('thumbnailIndex', thumbnailIndex.value)
-
-    const res = await axios.put(`/api/projects/updateProject`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+    const res = await $fetch('/api/projects/updateProject', {
+        method: 'POST',
+        body: payload
     })
 
-    if (!res.data.success) {
-        error.value = res.message;
+    if (!res.success) {
+        error.value = res.message
     } else {
-        emit('updated', res.data.project)
+        emit('updated', res.project)
     }
 }
+
 //Pour remettre les messages d'erreur à jour
 watchEffect(() => {
     if (newProjectData.value.category.length > 0) {

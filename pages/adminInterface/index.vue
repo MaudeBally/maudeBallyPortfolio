@@ -62,7 +62,7 @@
                 </div>
                 <div class="finalizing-upload-message-container">
                     <p v-if="isProcessing" class="finalizing-upload-message">
-                        Upload terminé — traitement des images en cours...
+                        Traitement des images en cours...
                     </p>
                 </div>
                 <div class="new-project-buttons-container">
@@ -104,7 +104,7 @@
 
 <script setup>
 import { ref, watchEffect } from 'vue';
-import axios from 'axios'
+import slugify from 'slugify'
 import DeleteValidationComponent from '~/components/modals/DeleteValidationComponent.vue';
 import ModifyProjectComponent from '~/components/modals/ModifyProjectComponent.vue';
 
@@ -230,6 +230,25 @@ function addPhotoAsThumbnail(index) {
     thumbnailIndex.value = index
 }
 
+async function uploadImagesToCloudinary(files, slug) {
+    const uploadPromises = files.map(file => {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('upload_preset', 'projects_unsigned')
+        formData.append('public_id', `projects/${slug}/${file.name}`)
+
+        return fetch(`https://api.cloudinary.com/v1_1/dajg37al1/image/upload`, {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => ({ url: data.secure_url, public_id: data.public_id }))
+    })
+
+    const uploadedImages = await Promise.all(uploadPromises)
+    return uploadedImages
+}
+
 const missingCategory = ref(false)
 const missingTitle = ref(false)
 const missingPhotos = ref(false)
@@ -243,32 +262,41 @@ async function submitNewProject() {
     //test que tous les champs obligatoires sont remplis
     if (missingCategory.value || missingTitle.value || missingPhotos.value) return
 
-    const formData = new FormData()
-    formData.append('title', JSON.stringify(title.value))
-    formData.append('description', JSON.stringify(description.value))
-    categories.value.sort().forEach(cat => {
-        formData.append("category", cat)
-    })
-    photos.value.forEach(file => formData.append('photos', file))
-    formData.append('thumbnailIndex', thumbnailIndex.value)
+    const slug = slugify(title.value.fr, { lower: true, strict: true })
 
-    const res = await axios.post('/api/projects/createNewProject', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (event) => {
-            if (event.total) {
-                progress.value = Math.round((event.loaded / event.total) * 100)
-                if (progress.value === 100) {
-                    isProcessing.value = true
-                }
+    isProcessing.value = true
+
+    try {
+        // Upload toutes les images en parallèle
+        progress.value = 25
+        const uploadedImages = await uploadImagesToCloudinary(photos.value, slug)
+        progress.value = 75
+
+        // Envoyer métadonnées + URLs au backend
+        const res = await $fetch('/api/projects/createNewProject', {
+            method: 'POST',
+            body: {
+                title: title.value,
+                description: description.value,
+                category: categories.value,
+                images: uploadedImages,
+                thumbnailIndex: thumbnailIndex.value
             }
-        }
-    })
+        })
 
-    if (!res.data.success) {
-        error.value = res.data.message;
-    } else {
-        projects.value.unshift(res.data.project)
-        closeNewProjectForm();
+        if (res.success) {
+            projects.value.unshift(res.project)
+            photos.value = []
+            previewUrls.value = []
+            thumbnailIndex.value = 0
+        } else {
+            console.log(res.message)
+        }
+    } catch (err) {
+        console.error(err)
+    } finally {
+        isProcessing.value = false
+        closeNewProjectForm()
     }
 }
 
@@ -282,7 +310,6 @@ watchEffect(() => {
     if (photos.value.length > 0) {
         missingPhotos.value = false
     }
-    console.log(progress.value)
 })
 
 /* ----------------------------------------------- DELETE MANAGEMENT ------------------------------------------- */

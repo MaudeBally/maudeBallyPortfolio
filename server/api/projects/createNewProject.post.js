@@ -1,9 +1,7 @@
 import connectDB from '~/server/db/index'
 import Project from '~/server/models/Project'
-import formidable from 'formidable'
 import slugify from 'slugify'
 import { getCurrentUser } from '~/server/utils/auth'
-import { v2 as cloudinary } from 'cloudinary'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -17,102 +15,39 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: "Pas les droits..." }
     }
 
-    cloudinary.config({
-      cloud_name: process.env.CLOUD_NAME,
-      api_key: process.env.CLOUD_API_KEY,
-      api_secret: process.env.CLOUD_API_SECRET,
+    const body = await readBody(event)
+    const { title, description, category, images, thumbnailIndex } = body
+
+    if (!title?.fr || !title?.en) return { success: false, message: 'Titre FR et EN requis' }
+    if (!category?.length) return { success: false, message: 'Categorie requise' }
+    if (!images?.length) return { success: false, message: 'Photos requises' }
+
+    // Générer slug unique
+    let slug = slugify(title.fr, { lower: true, strict: true })
+    let counter = 1
+    while (await Project.findOne({ slug })) slug = `${slug}-${counter++}`
+
+    // Créer les objets { url, public_id } pour les images
+    const photos = images.map(img => ({
+      url: img.url,
+      public_id: img.public_id || null
+    }))
+
+    // Déterminer le thumbnail
+    const thumbnail = photos[thumbnailIndex] || photos[0]
+
+    const newProject = new Project({
+      slug,
+      title,
+      description,
+      category,
+      photos,
+      thumbnail,
+      createdAt: new Date()
     })
 
-    const form = formidable({ multiples: true })
-
-    return new Promise((resolve, reject) => {
-      form.parse(event.node.req, async (err, fields, files) => {
-        if (err) return reject(err)
-
-        if (!fields.title) {
-          return resolve({ success: false, message: 'Titre requis' })
-        }
-
-        let parsedTitle
-        let parsedDescription = undefined
-
-        try {
-          parsedTitle = JSON.parse(fields.title[0] || fields.title)
-
-          if (fields.description) {
-            parsedDescription = JSON.parse(fields.description[0] || fields.description)
-          }
-        } catch (err) {
-          return resolve({ success: false, message: 'Format JSON invalide' })
-        }
-
-        if (!parsedTitle.fr || !parsedTitle.en) {
-          return resolve({ success: false, message: 'Titre FR et EN requis' })
-        }
-        const categories = fields.category
-
-        if (!categories.length) return resolve({ success: false, message: 'Categorie requise' })
-        if (!files.photos) return resolve({ success: false, message: 'Photos requises' })
-
-        // Créer projet dans la BDD
-        let slug = slugify(parsedTitle.fr, { lower: true, strict: true })
-        let counter = 1
-
-        while (await Project.findOne({ slug })) {
-          slug = `${slug}-${counter++}`
-        }
-        const newProject = new Project({
-          slug: slug,
-          title: parsedTitle,
-          description: parsedDescription,
-          category: categories,
-          photos: [],
-          thumbnail: null,
-          createdAt: new Date()
-        })
-
-        const savedProject = await newProject.save()
-        const projectSlug = savedProject.slug.toString()
-
-        const fileArray = Array.isArray(files.photos) ? files.photos : [files.photos]
-
-        const uploadPromises = fileArray.map((file, index) => {
-          const originalName = file.originalFilename || file.newFilename
-          const extension = originalName.split('.').pop()
-          const baseName = originalName.replace(`.${extension}`, '')
-          const safeName = slugify(baseName, { lower: true, strict: true })
-
-          return cloudinary.uploader.upload(
-            file.filepath,
-            {
-              folder: `projects/${projectSlug}`,
-              public_id: `${Date.now()}-${safeName}`,
-              resource_type: "image"
-            }
-          ).then(result => ({
-            url: result.secure_url,
-            public_id: result.public_id,
-            index
-          }))
-        })
-
-        const uploadedFiles = await Promise.all(uploadPromises)
-
-
-        const thumbnailIndex = parseInt(fields.thumbnailIndex?.[0] || fields.thumbnailIndex || 0)
-
-        savedProject.photos = uploadedFiles.map(f => ({
-          url: f.url,
-          public_id: f.public_id
-        }))
-
-        savedProject.thumbnail = uploadedFiles[thumbnailIndex] || uploadedFiles[0]
-
-        await savedProject.save()
-
-        resolve({ success: true, project: savedProject })
-      })
-    })
+    const savedProject = await newProject.save()
+    return { success: true, project: savedProject }
 
   } catch (err) {
     console.error('Erreur création projet:', err)
