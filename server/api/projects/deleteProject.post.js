@@ -28,19 +28,20 @@ export default defineEventHandler(async (event) => {
             return { success: false, message: 'Projet non trouvé' }
         }
 
-        const folder = `projects/${project.slug}`
-
         // Supprime les fichiers images
         cloudinary.config({
             cloud_name: process.env.CLOUD_NAME,
             api_key: process.env.CLOUD_API_KEY,
             api_secret: process.env.CLOUD_API_SECRET,
         })
-        // Supprime toutes les images du dossier
-        await cloudinary.api.delete_resources_by_prefix(folder)
-
-        // Supprime le dossier lui-même
-        await cloudinary.api.delete_folder(folder)
+        // Supprimer UNIQUEMENT les images du projet
+        if (project.photos && project.photos.length) {
+            await Promise.all(
+                project.photos.map(photo =>
+                    cloudinary.uploader.destroy(photo.public_id)
+                )
+            )
+        }
 
         // Supprime le projet de la BDD
         await Project.deleteOne({ _id: projectId })

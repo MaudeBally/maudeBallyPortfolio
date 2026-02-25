@@ -1,7 +1,6 @@
 // ~/server/api/projects/updater.ts
 import connectDB from '~/server/db/index'
 import Project from '~/server/models/Project'
-import formidable from 'formidable'
 import slugify from 'slugify'
 import { isValidObjectId } from 'mongoose'
 import { getCurrentUser } from '~/server/utils/auth'
@@ -26,91 +25,88 @@ export default defineEventHandler(async (event) => {
             api_secret: process.env.CLOUD_API_SECRET,
         })
 
-        // Lecture du formulaire
-        const form = formidable({ multiples: true })
+        const body = await readBody(event)
 
-        return new Promise((resolve, reject) => {
-            form.parse(event.node.req, async (err, fields, files) => {
-                if (err) return reject(err)
+        const {
+            id,
+            title,
+            description,
+            category,
+            photos,        //nouvelles photos déjà uploadées (url + public_id)
+            deletePhotos,  //array de public_id
+            thumbnailIndex
+        } = body
 
-                const projectId = fields.id?.[0] || fields.id
-                if (!projectId || !isValidObjectId(projectId)) {
-                    return resolve({ success: false, message: 'ID du projet invalide' })
-                }
+        if (!id || !isValidObjectId(id)) {
+            return { success: false, message: "ID du projet invalide" }
+        }
 
-                const project = await Project.findById(projectId)
-                if (!project) return resolve({ success: false, message: 'Projet introuvable' })
+        const project = await Project.findById(id)
+        if (!project) {
+            return { success: false, message: "Projet introuvable" }
+        }
 
-                // Champs à mettre à jour
-                let title = project.title
-                if (fields.title) {
-                    const rawTitle = fields.title[0] || fields.title
-                    title = JSON.parse(rawTitle)
-                }
-                if (!title.fr || !title.en) {
-                    return resolve({ success: false, message: "Titre incomplet (FR et EN requis)" })
-                }
-                // Regénération automatique du slug si le titre FR change
-                if (title.fr !== project.title.fr) {
-                    let newSlug = slugify(title.fr, { lower: true, strict: true })
-                    let counter = 1
+        //Validation titre
+        if (!title?.fr || !title?.en) {
+            return { success: false, message: "Titre incomplet (FR et EN requis)" }
+        }
 
-                    // Évite les collisions
-                    while (await Project.findOne({ slug: newSlug, _id: { $ne: project._id } })) {
-                        newSlug = `${newSlug}-${counter++}`
-                    }
+        //Recalculer le slug si nécessaire
+        if (title.fr !== project.title.fr) {
+            let baseSlug = slugify(title.fr, { lower: true, strict: true })
+            let finalSlug = baseSlug
+            let counter = 1
 
-                    project.slug = newSlug
-                }
+            while (
+                await Project.findOne({
+                    slug: finalSlug,
+                    _id: { $ne: project._id }
+                })
+            ) {
+                finalSlug = `${baseSlug}-${counter++}`
+            }
 
-                let description = project.description
-                if (fields.description) {
-                    const rawDescription = fields.description[0] || fields.description
-                    description = JSON.parse(rawDescription)
-                }
+            project.slug = finalSlug
+        }
 
-                const categories = fields.category || project.category
+        //Supression cloudinary
+        if (deletePhotos && deletePhotos.length) {
+            await Promise.all(
+                deletePhotos.map((publicId) =>
+                    cloudinary.uploader.destroy(publicId)
+                )
+            )
 
-                project.title = title
-                project.description = description
-                project.category = categories
+            project.photos = project.photos.filter(
+                (photo) => !deletePhotos.includes(photo.public_id)
+            )
+        }
 
-                // Suppression des anciennes photos
-                const deletePhotos = fields.deletePhotos ? JSON.parse(fields.deletePhotos[0]) : []
-                if (deletePhotos.length) {
-                    project.photos = project.photos.filter(photo => {
-                        if (deletePhotos.includes(photo.public_id)) {
-                            cloudinary.uploader.destroy(photo.public_id)
-                            return false
-                        }
-                        return true
-                    })
-                }
+        //Ajout des nouvelles photos pour la DB
+        if (photos && photos.length) {
+            project.photos.push(...photos)
+        }
 
-                // Ajout des nouvelles photos
-                if (files.newPhotos) {
-                    const fileArray = Array.isArray(files.newPhotos) ? files.newPhotos : [files.newPhotos]
-                    for (const file of fileArray) {
-                        const upload = await cloudinary.uploader.upload(file.filepath, {
-                            folder: `projects/${projectId}`,
-                            resource_type: "image",
-                            transformation: [{ quality: "auto" }, { fetch_format: "auto" }]
-                        })
-                        project.photos.push({ url: upload.secure_url, public_id: upload.public_id })
-                    }
-                }
+        //Mise à jour des champs
+        project.title = title
+        project.description = description
+        project.category = category
 
-                //Gestion thumbnail
-                const thumbnailIndex = parseInt(fields.thumbnailIndex?.[0] || fields.thumbnailIndex)
-                if (!isNaN(thumbnailIndex) && project.photos[thumbnailIndex]) {
-                    project.thumbnail = project.photos[thumbnailIndex]
-                }
+        //Gestion du thumbnail
+        if (
+            typeof thumbnailIndex === "number" &&
+            project.photos[thumbnailIndex]
+        ) {
+            project.thumbnail = project.photos[thumbnailIndex]
+        }
 
-                // Sauvegarde finale
-                const updatedProject = await project.save()
-                resolve({ success: true, project: updatedProject })
-            })
-        })
+        //Save
+        const updateProject = await project.save()
+
+        return {
+            success: true,
+            project: updateProject
+        }
     } catch (err) {
         console.error('Erreur modification projet:', err)
         throw createError({
