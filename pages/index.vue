@@ -1,5 +1,5 @@
 <template>
-    <div class="portfolio-container" :style="{ gridTemplateColumns: `repeat(${columnsNb}, 1fr)` }">
+    <div v-if="isMounted" class="portfolio-container" :style="{ gridTemplateColumns: `repeat(${columnsNb}, 1fr)` }">
         <div v-for="(col, colIndex) in columns" :key="colIndex" class="portfolio-container-col"
             :class="`col${colIndex + 1}`">
             <div v-for="project in col" :key="project._id" class="project-container">
@@ -13,19 +13,22 @@
 <script setup>
 import { useWindowSize } from '@vueuse/core'
 const { width, height } = useWindowSize()
-
 const { locale } = useI18n()
 
 const store = useProjectsStore()
 await store.fetchProjects()
 
+const isMounted = ref(false)
+
+onMounted(() => {
+    isMounted.value = true
+})
+
 const columnsNb = computed(() => {
-    if (width.value < 700) {
-        return 1
-    }
-    if (width.value < 1000) {
-        return 2
-    }
+    if (!isMounted.value) return 1
+
+    if (width.value < 700) return 1
+    if (width.value < 1000) return 2
     return 3
 })
 
