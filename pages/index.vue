@@ -3,8 +3,9 @@
         <div v-for="(col, colIndex) in columns" :key="colIndex" class="portfolio-container-col"
             :class="`col${colIndex + 1}`">
             <div v-for="project in col" :key="project._id" class="project-container">
-                <img class="thumbnail" :src="project.thumbnail ? project.thumbnail.url : 'https://as1.ftcdn.net/jpg/02/68/55/60/1000_F_268556012_c1WBaKFN5rjRxR2eyV33znK4qnYeKZjm.jpg'" :alt="project.name"
+                <img class="thumbnail" :src="project.thumbnail ? project.thumbnail.url : 'https://as1.ftcdn.net/jpg/02/68/55/60/1000_F_268556012_c1WBaKFN5rjRxR2eyV33znK4qnYeKZjm.jpg'" :alt="project.title[locale]"
                     @click="navigateToProject(project.slug)" />
+                <span class="project-title">{{project.title[locale]}}</span>
             </div>
         </div>
     </div>
@@ -82,16 +83,29 @@ watchEffect(() => {
     width: 100%;
     display: flex;
     justify-content: center;
+    position: relative;
+    cursor: pointer;
 }
 
 .thumbnail {
     width: 90%;
-    cursor: pointer;
     transition: 0.2s;
 }
 
-.thumbnail:hover {
-    scale: 1.05;
-    transform: rotateZ(-2deg);
+.project-title {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: 0.2s;
+}
+
+.project-container:hover .thumbnail {
+    filter: blur(10px)
+}
+
+.project-container:hover .project-title {
+    opacity: 1;
 }
 </style>

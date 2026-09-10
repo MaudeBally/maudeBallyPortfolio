@@ -17,5 +17,9 @@
         "collaborations": "Collaborations",
         "clients": "Mandats",
         "personnal": "Travaux personnels"
+    },
+
+    "divers": {
+        "close": "Fermer"
     }
 }
