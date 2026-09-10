@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
             category,
             photos,        //nouvelles photos déjà uploadées (url + public_id)
             deletePhotos,  //array de public_id
-            thumbnailIndex
+            thumbnailPublicId
         } = body
 
         if (!id || !isValidObjectId(id)) {
@@ -76,16 +76,9 @@ export default defineEventHandler(async (event) => {
                     cloudinary.uploader.destroy(publicId)
                 )
             )
-
-            project.photos = project.photos.filter(
-                (photo) => !deletePhotos.includes(photo.public_id)
-            )
         }
 
-        //Ajout des nouvelles photos pour la DB
-        if (photos && photos.length) {
-            project.photos.push(...photos)
-        }
+        project.photos = photos
 
         //Mise à jour des champs
         project.title = title
@@ -93,11 +86,12 @@ export default defineEventHandler(async (event) => {
         project.category = category
 
         //Gestion du thumbnail
-        if (
-            typeof thumbnailIndex === "number" &&
-            project.photos[thumbnailIndex]
-        ) {
-            project.thumbnail = project.photos[thumbnailIndex]
+        const thumbnail = project.photos.find(
+            photo => photo.public_id === thumbnailPublicId
+        )
+
+        if(thumbnail) {
+            project.thumbnail = thumbnail
         }
 
         //Save

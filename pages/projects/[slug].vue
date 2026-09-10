@@ -42,7 +42,7 @@ const columnsNb = computed(() => {
         <p class="project-description">{{ project.description[locale] }}</p>
         <div class="photos-container" :style="{ columnCount: columnsNb }">
             <div v-for="photo in project.photos" class="photo-container">
-                <img :src="photo.url">
+                <img :src="photo ? photo.url : 'https://as1.ftcdn.net/jpg/02/68/55/60/1000_F_268556012_c1WBaKFN5rjRxR2eyV33znK4qnYeKZjm.jpg'">
             </div>
         </div>
     </div>
