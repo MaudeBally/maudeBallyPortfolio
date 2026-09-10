@@ -17,5 +17,9 @@
         "collaborations": "Collaborations",
         "clients": "Clients",
         "personnal": "Personnal works"
+    },
+
+    "divers": {
+        "close": "Close"
     }
 }

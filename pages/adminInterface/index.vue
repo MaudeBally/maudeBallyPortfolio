@@ -77,7 +77,7 @@
             <div v-for="project in projects" :key="project._id" class="project-container">
                 <div class="project-data">
                     <div class="thumbnail">
-                        <img :src="project.thumbnail.url">
+                        <img :src="project.thumbnail ? project.thumbnail.url : 'https://as1.ftcdn.net/jpg/02/68/55/60/1000_F_268556012_c1WBaKFN5rjRxR2eyV33znK4qnYeKZjm.jpg'">
                     </div>
                     <div class="title">{{ project.title[locale] }}</div>
                     <div class="category-container">

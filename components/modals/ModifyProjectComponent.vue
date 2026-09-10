@@ -41,13 +41,14 @@
                     <input @change="handleAddPhotos" id="photos" type="file" multiple accept="image/*" />
                     <label for="photos" class="custom-file-upload">Ajouter des photos</label><br>
                     <span v-if="missingPhotos" class="alert-message">Il faut ajouter au moins une photo</span>
-                    <div v-if="newProjectData.photos.length" class="photo-preview-container">
-                        <div v-for="(photo, index) in newProjectData.photos" :key="photo.id" v-show="!photo.toDelete"
+                    <VueDraggable v-if="newProjectData.photos.length" v-model="newProjectData.photos"
+                        class="photo-preview-container" :animation="200">
+                        <div v-for="(photo) in newProjectData.photos" :key="photo.id" v-show="!photo.toDelete"
                             class="photo-container">
                             <div class="photo-button-container">
-                                <button type="button" class="infront-photo" @click="setThumbnail(index)">
-                                    <font-awesome-icon v-show="thumbnailIndex !== index" icon="fa-regular fa-star" />
-                                    <font-awesome-icon v-show="thumbnailIndex === index" icon="fa-solid fa-star" />
+                                <button type="button" class="infront-photo" @click="setThumbnail(photo)">
+                                    <font-awesome-icon v-show="thumbnailId !== photo.id" icon="fa-regular fa-star" />
+                                    <font-awesome-icon v-show="thumbnailId === photo.id" icon="fa-solid fa-star" />
                                 </button>
                                 <button type="button" class="delete-photo" @click="removePhoto(photo.id)">
                                     <font-awesome-icon icon="fa-solid fa-xmark" />
@@ -55,7 +56,7 @@
                             </div>
                             <img :src="photo.src" alt="Preview" class="photo-preview">
                         </div>
-                    </div>
+                    </VueDraggable>
                 </div>
 
                 <div class="modify-project-button-container">
@@ -71,6 +72,7 @@
 import { watchEffect, ref, onMounted } from 'vue'
 import axios from 'axios'
 import slugify from 'slugify'
+import { VueDraggable } from 'vue-draggable-plus'
 const props = defineProps({ project: Object })
 
 const { locale } = useI18n()
@@ -97,14 +99,20 @@ const newProjectData = ref({
     })),
 })
 
-const thumbnailIndex = ref(0)
+const thumbnailId = ref(null)
 
 // Initialise thumbnailIndex sur montage
 onMounted(() => {
     const thumb = props.project.thumbnail?.public_id
+
     if (thumb) {
-        const index = newProjectData.value.photos.findIndex(p => p.name === thumb)
-        if (index !== -1) thumbnailIndex.value = index
+        const photo = newProjectData.value.photos.find(
+            p => p.name === thumb
+        )
+
+        if (photo) {
+            thumbnailId.value = photo.id
+        }
     }
 })
 
@@ -122,7 +130,7 @@ function handleAddPhotos(event) {
 
     // Si on n'avait pas de thumbnail, définir la première nouvelle comme thumbnail
     if (newProjectData.value.photos.length === newPhotos.length) {
-        thumbnailIndex.value = 0
+        thumbnailId.value = newPhotos[0].id
     }
 }
 
@@ -140,14 +148,14 @@ function removePhoto(photoId) {
     }
 
     // Ajuster thumbnailIndex si nécessaire
-    if (index === thumbnailIndex.value) {
-        const firstAvailable = newProjectData.value.photos.findIndex(p => !p.toDelete)
-        thumbnailIndex.value = firstAvailable !== -1 ? firstAvailable : 0
+    if (photo.id === thumbnailId.value) {
+        const firstAvailable = newProjectData.value.photos.find(p => !p.toDelete)
+        thumbnailId.value = firstAvailable?.id || null
     }
 }
 
-function setThumbnail(index) {
-    thumbnailIndex.value = index
+function setThumbnail(photo) {
+    thumbnailId.value = photo.id
 }
 
 const missingCategory = ref(false)
@@ -172,28 +180,67 @@ async function submitEdit() {
     // Séparer les nouvelles images
     const newPhotos = newProjectData.value.photos.filter(p => p.type === 'new')
 
-    // Upload direct vers Cloudinary
-    const uploadedPhotos = await Promise.all(newPhotos.map(p => {
-        const form = new FormData()
-        form.append('file', p.file)
-        form.append('upload_preset', 'projects_unsigned')
-        form.append('folder', `projects/${newSlug}`)
+    const uploadedPhotos = await Promise.all(
+        newPhotos.map(async p => {
+            const form = new FormData()
 
-        return fetch('https://api.cloudinary.com/v1_1/dajg37al1/image/upload', {
-            method: 'POST',
-            body: form
+            form.append('file', p.file)
+            form.append('upload_preset', 'projects_unsigned')
+            form.append('folder', `projects/${newSlug}`)
+
+            const res = await fetch(
+                'https://api.cloudinary.com/v1_1/dajg37al1/image/upload',
+                {
+                    method: 'POST',
+                    body: form
+                }
+            )
+
+            const data = await res.json()
+
+            return {
+                tempId: p.id,
+                url: data.secure_url,
+                public_id: data.public_id
+            }
         })
-            .then(res => res.json())
-            .then(data => ({ url: data.secure_url, public_id: data.public_id }))
-    }))
+    )
 
-    // Photos existantes conservées
-    const existingPhotos = newProjectData.value.photos
-        .filter(p => p.type === 'existing' && !p.toDelete)
-        .map(p => ({
-            url: p.src,
-            public_id: p.name
-        }))
+    const finalPhotos = newProjectData.value.photos.filter(p => !p.toDelete).map(photo => {
+        if (photo.type === 'existing') {
+            return {
+                url: photo.src,
+                public_id: photo.name
+            }
+        }
+
+        const uploaded = uploadedPhotos.find(
+            p => p.tempId === photo.id
+        )
+
+        return {
+            url: uploaded.url,
+            public_id: uploaded.public_id
+        }
+    })
+
+    const selectedThumbnail = newProjectData.value.photos.find(
+        photo => photo.id === thumbnailId.value && !photo.toDelete
+    )
+
+    let thumbnailPublicId = null
+
+    if(selectedThumbnail) {
+        if(selectedThumbnail.type === 'existing') {
+            thumbnailPublicId = selectedThumbnail.name
+        } else {
+            const uploadedThumbnail = uploadedPhotos.find(
+                photo => photo.tempId === selectedThumbnail.id
+            )
+
+            thumbnailPublicId = uploadedThumbnail?.public_id || null
+        }
+    }
 
     const deletePhotos = newProjectData.value.photos
         .filter(p => p.type === 'existing' && p.toDelete)
@@ -204,9 +251,9 @@ async function submitEdit() {
         title: newProjectData.value.title,
         description: newProjectData.value.description,
         category: newProjectData.value.category,
-        photos: uploadedPhotos, // seulement les nouvelles
+        photos: finalPhotos,
         deletePhotos,
-        thumbnailIndex: thumbnailIndex.value
+        thumbnailPublicId
     }
 
     const res = await $fetch('/api/projects/updateProject', {
@@ -300,6 +347,12 @@ textarea {
     width: 200px;
     height: 200px;
     overflow: hidden;
+    user-select: none;
+    cursor: grab;
+}
+
+.photo-container:active {
+    cursor: grabbing;
 }
 
 .photo-preview {
