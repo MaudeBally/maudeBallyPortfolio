@@ -96,8 +96,6 @@ img {
     display: block;
     max-height: 80vh;
     max-width: 100%;
-    width: 100%;
-    height: auto;
 }
 
 .project-description {
