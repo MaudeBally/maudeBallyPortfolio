@@ -5,6 +5,7 @@
             <div v-for="project in col" :key="project._id" class="project-container">
                 <img class="thumbnail" :src="project.thumbnail ? project.thumbnail.url : 'https://as1.ftcdn.net/jpg/02/68/55/60/1000_F_268556012_c1WBaKFN5rjRxR2eyV33znK4qnYeKZjm.jpg'" :alt="project.title[locale]"
                     @click="navigateToProject(project.slug)" />
+                <div class="thumbnail-hover-panel"></div>
                 <span class="project-title">{{project.title[locale]}}</span>
             </div>
         </div>
@@ -47,11 +48,6 @@ function navigateToProject(slug) {
     navigateTo(`${locale.value}/projects/${slug}`)
     store.setCategory(null)
 }
-
-watchEffect(() => {
-    console.log(store)
-    console.log(columns.value)
-})
 </script>
 
 <style scoped>
@@ -92,6 +88,17 @@ watchEffect(() => {
     transition: 0.2s;
 }
 
+.thumbnail-hover-panel {
+    position: absolute;
+    width: 90%;
+    height: 100%;
+    background-color: transparent;
+    filter: blur(10px);
+    opacity: 0.5;
+    transition: 0.2s;
+    pointer-events: none;
+}
+
 .project-title {
     position: absolute;
     top: 50%;
@@ -103,6 +110,9 @@ watchEffect(() => {
 
 .project-container:hover .thumbnail {
     filter: blur(10px)
+}
+.project-container:hover .thumbnail-hover-panel {
+    background-color: white;
 }
 
 .project-container:hover .project-title {

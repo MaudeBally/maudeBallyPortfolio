@@ -108,8 +108,4 @@ img {
     position: absolute;
     right: 32px;
 }
-
-.go-back-button:hover {
-
-}
 </style>

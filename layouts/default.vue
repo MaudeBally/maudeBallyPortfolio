@@ -201,6 +201,10 @@ header {
     color: brown;
 }
 
+.nav * {
+    font-family: 'RobotoSlabRegular', sans-serif;
+}
+
 .nav {
     display: flex;
     gap: 1rem;
@@ -225,7 +229,7 @@ header {
 .filter-container {
     width: 250px;
     font-size: 16px;
-    font-family: 'AltesHaasGrotestBold', sans-serif;
+    font-family: 'RobotoSlabRegular', sans-serif;
     font-weight: 500;
     position: fixed;
     left: 0;
