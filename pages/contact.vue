@@ -5,16 +5,12 @@
             <div class="biography-text">
                 {{ $t('bio.text') }}
             </div>
-            <img class="random-image"
-                :src="getPhotoUrl"
-                alt="">
+            <img class="random-image" :src="getPhotoUrl" alt="">
         </div>
-        <div class="contact-section">
-            <div class="contact-info-container">
-                <span>079/814.11.52</span>
-                <span><a href="https://www.instagram.com/maude_bally/" target="_blank">@maude_bally</a></span>
-                <span><a href="mailto:m.bally@infomaniak.ch">m.bally@infomaniak.ch</a></span>
-            </div>
+        <div class="contact-info-container">
+            <span>079/814.11.52</span>
+            <span><a href="https://www.instagram.com/maude_bally/" target="_blank">@maude_bally</a></span>
+            <span><a href="mailto:m.bally@infomaniak.ch">m.bally@infomaniak.ch</a></span>
         </div>
     </div>
 </template>
@@ -26,7 +22,7 @@ const store = useProjectsStore()
 await store.fetchProjects()
 
 const randomProjectNumber = computed(() => {
-    return randomIntFromInterval(0, store.projects.length-1)
+    return randomIntFromInterval(0, store.projects.length - 1)
 })
 
 const randomPhotoFromProject = computed(() => {
@@ -37,8 +33,8 @@ const getPhotoUrl = computed(() => {
     return store.projects[randomProjectNumber.value].photos[randomPhotoFromProject.value].url
 })
 
-function randomIntFromInterval(min, max) { 
-  return Math.floor(Math.random() * (max - min + 1) + min);
+function randomIntFromInterval(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
 }
 </script>
 
@@ -48,6 +44,7 @@ function randomIntFromInterval(min, max) {
     display: flex;
     flex-direction: column;
     min-height: calc(100dvh - 100px);
+    gap: 50px;
 }
 
 .go-back-button {
@@ -90,8 +87,12 @@ function randomIntFromInterval(min, max) {
 }
 
 @media (max-width: 560px) {
-  .biography-section {
-    flex-direction: column;
-  }
+    .biography-section {
+        flex-direction: column;
+        margin-top: 50px;
+    }
+    .contact-info-container {
+    padding-bottom: 50px;
+}
 }
 </style>
