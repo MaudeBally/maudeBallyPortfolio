@@ -2,10 +2,61 @@
     <div class="admin-dashboard-container">
         <h1>Maude Bally's Dashboard</h1>
 
-        <div class="create-project-button-container">
-            <button class="create-project-button" @click="openNewProjectForm()">Créer un nouveau projet</button>
+        <div class="biography-section">
+            <div class="section-header">
+                <h2>Biography / Contact</h2>
+                <button class="modify-biography-button" @click="selectPersonalDataToModify()">Modifier</button>
+            </div>
+
+            <div class="personalData-container">
+                <div class="personalData-entry">
+                    <span>Email:</span><span>{{ personalData.email }}</span>
+                </div>
+                <div class="personalData-entry">
+                    <span>Instagram:</span><span>{{ personalData.insta }}</span>
+                </div>
+                <div class="personalData-entry">
+                    <span>Téléphone:</span><span>{{ personalData.phone }}</span>
+                </div>
+                <div class="personalData-entry">
+                    <span>Biographie (fr):</span><span>{{ personalData.biography?.fr }}</span>
+                </div>
+                <div class="personalData-entry">
+                    <span>Biographie (en):</span><span>{{ personalData.biography?.en }}</span>
+                </div>
+            </div>
         </div>
 
+        <div class="projects-section">
+            <div class="section-header">
+                <h2>Projects</h2>
+                <button class="create-project-button" @click="openNewProjectForm()">Créer un nouveau projet</button>
+            </div>
+
+            <div v-if="!newProjectPageOpen" class="projects-container">
+                <div v-for="project in projects" :key="project._id" class="project-container">
+                    <div class="project-data">
+                        <div class="thumbnail">
+                            <img
+                                :src="project.thumbnail ? project.thumbnail.url : 'https://as1.ftcdn.net/jpg/02/68/55/60/1000_F_268556012_c1WBaKFN5rjRxR2eyV33znK4qnYeKZjm.jpg'">
+                        </div>
+                        <div class="title">{{ project.title[locale] }}</div>
+                        <div class="category-container">
+                            <span v-for="category in project.category" class="category">{{ $t(`categories.${category}`)
+                                }}</span>
+                        </div>
+                    </div>
+                    <div class="project-buttons-container">
+                        <button class="modify-button" @click="selectProjectToModify(project)">Modifier</button>
+                        <button class="delete-button" @click="selectProjectToDelete(project)">Supprimer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Modal of project creation -->
         <div v-if="newProjectPageOpen" class="create-project-page">
             <h1>Nouveau Projet</h1>
             <form class="new-project-form" @submit.prevent="submitNewProject()">
@@ -73,31 +124,17 @@
             </form>
         </div>
 
-        <div v-if="!newProjectPageOpen" class="projects-container">
-            <div v-for="project in projects" :key="project._id" class="project-container">
-                <div class="project-data">
-                    <div class="thumbnail">
-                        <img :src="project.thumbnail ? project.thumbnail.url : 'https://as1.ftcdn.net/jpg/02/68/55/60/1000_F_268556012_c1WBaKFN5rjRxR2eyV33znK4qnYeKZjm.jpg'">
-                    </div>
-                    <div class="title">{{ project.title[locale] }}</div>
-                    <div class="category-container">
-                        <span v-for="category in project.category" class="category">{{ $t(`categories.${category}`)
-                            }}</span>
-                    </div>
-                </div>
-                <div class="project-buttons-container">
-                    <button class="modify-button" @click="selectProjectToModify(project)">Modifier</button>
-                    <button class="delete-button" @click="selectProjectToDelete(project)">Supprimer</button>
-                </div>
-            </div>
-        </div>
-
-
+        <!-- Modal of project deletion -->
         <DeleteValidationComponent v-if="projectToDelete" :project="projectToDelete" @cancel="projectToDelete = null"
             @confirm="deleteProject(projectToDelete)" />
 
+        <!-- Modal of project modification -->
         <ModifyProjectComponent v-if="projectToModify" :project="projectToModify" @cancel="projectToModify = null"
             @updated="onProjectUpdate" />
+
+        <!-- Modal of personalData modification -->
+        <ModifyPersonalDataComponent v-if="personalDataToModify" :personalData="personalDataToModify" @cancel="personalDataToModify = null"
+            @updated="onPersonalDataUpdate" />
 
     </div>
 </template>
@@ -107,16 +144,25 @@ import { ref, watchEffect } from 'vue';
 import slugify from 'slugify'
 import DeleteValidationComponent from '~/components/modals/DeleteValidationComponent.vue';
 import ModifyProjectComponent from '~/components/modals/ModifyProjectComponent.vue';
+import ModifyPersonalDataComponent from '~/components/modals/ModifyPersonalDataComponent.vue';
 
 const { locale } = useI18n()
 
 const projects = ref([])
+const personalData = ref({})
 onMounted(async () => {
     try {
         const res = await $fetch("/api/projects/getAllProjects")
         projects.value = res.projects || []
     } catch (err) {
         console.error("Erreur chargement projets:", err)
+    }
+
+    try {
+        const res = await $fetch("/api/personalData/getAllPersonalData")
+        personalData.value = res.personalData[0] || {}
+    } catch (err) {
+        console.error("Erreur chargement personalData:", err)
     }
 })
 
@@ -347,11 +393,21 @@ function onProjectUpdate(updatedProject) {
     projectToModify.value = null
 }
 
+const personalDataToModify = ref()
+function selectPersonalDataToModify(){
+    personalDataToModify.value = personalData.value
+}
+function onPersonalDataUpdate(updatedPersonalData) {
+    // Remplacer l’ancien personalData par le personalData mis à jour
+    personalData.value = updatedPersonalData
+    personalDataToModify.value = null
+}
+
 /* ------------------------------------------------------ Empêcher scroll si une modal est ouverte --------------------------- */
 watchEffect(() => {
     if (!process.client) return //pour bloquer l'execution côté serveur. (Etre sûr que le document est chargé clientside)
 
-    if (projectToModify.value || projectToDelete.value) {
+    if (projectToModify.value || projectToDelete.value || personalDataToModify.value) {
         const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth
         document.body.style.paddingRight = `${scrollBarWidth}px`
         document.body.classList.add("no-scroll")
@@ -359,7 +415,7 @@ watchEffect(() => {
         document.body.classList.remove("no-scroll")
         document.body.style.paddingRight = ''
     }
-}, [projectToDelete, projectToModify])
+}, [projectToDelete, projectToModify, personalDataToModify])
 </script>
 
 <style scoped>
@@ -370,9 +426,25 @@ watchEffect(() => {
     padding: 50px 25px 50px 25px;
 }
 
-.create-project-button-container {
+.biography-section {
+    margin-bottom: 30px;
+}
+
+.section-header {
     display: flex;
-    justify-content: end;
+    gap: 30px;
+    justify-content: space-between;
+}
+
+.personalData-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.personalData-entry {
+    display: flex;
+    gap: 10px;
 }
 
 .create-project-button {
