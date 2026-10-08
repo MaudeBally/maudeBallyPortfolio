@@ -3,14 +3,14 @@
         <NuxtLink class="go-back-button" :to="`/${locale}`">{{ $t('divers.close') }}</NuxtLink>
         <div class="biography-section">
             <div class="biography-text">
-                {{ $t('bio.text') }}
+                {{ personalData.biography[locale] }}
             </div>
             <img class="random-image" :src="getPhotoUrl" alt="">
         </div>
         <div class="contact-info-container">
-            <span>+41 79 814 11 52</span>
-            <span><a href="https://www.instagram.com/maude_bally/" target="_blank">@maude_bally</a></span>
-            <span><a href="mailto:m.bally@infomaniak.ch">m.bally@infomaniak.ch</a></span>
+            <span>{{ personalData.phone }}</span>
+            <span><a :href="`https://www.instagram.com/${personalData.insta?.substring(1)}/`" target="_blank">{{ personalData.insta }}</a></span>
+            <span><a :href="`mailto:${personalData.mail}`">{{ personalData.email }}</a></span>
         </div>
     </div>
 </template>
@@ -36,6 +36,22 @@ const getPhotoUrl = computed(() => {
 function randomIntFromInterval(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
+
+
+const personalData = ref({
+    biography: {
+        fr: '',
+        en: ''
+    }
+})
+onMounted(async () => {
+    try {
+        const res = await $fetch("/api/personalData/getAllPersonalData")
+        personalData.value = res.personalData[0] || {}
+    } catch (err) {
+        console.error("Erreur chargement personalData:", err)
+    }
+})
 </script>
 
 <style scoped>
@@ -91,8 +107,9 @@ function randomIntFromInterval(min, max) {
         flex-direction: column;
         margin-top: 50px;
     }
+
     .contact-info-container {
-    padding-bottom: 50px;
-}
+        padding-bottom: 50px;
+    }
 }
 </style>
