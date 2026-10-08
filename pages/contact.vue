@@ -8,7 +8,7 @@
             <img class="random-image" :src="getPhotoUrl" alt="">
         </div>
         <div class="contact-info-container">
-            <span>079/814.11.52</span>
+            <span>+41 79 814 11 52</span>
             <span><a href="https://www.instagram.com/maude_bally/" target="_blank">@maude_bally</a></span>
             <span><a href="mailto:m.bally@infomaniak.ch">m.bally@infomaniak.ch</a></span>
         </div>
