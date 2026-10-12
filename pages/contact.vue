@@ -5,7 +5,7 @@
             <div class="biography-text">
                 {{ personalData.biography[locale] }}
             </div>
-            <img class="random-image" :src="getPhotoUrl" alt="">
+            <img class="random-image" :src="getPhotoUrl">
         </div>
         <div class="contact-info-container">
             <span>{{ personalData.phone }}</span>
@@ -104,7 +104,7 @@ onMounted(async () => {
 
 @media (max-width: 560px) {
     .biography-section {
-        flex-direction: column;
+        flex-direction: column-reverse;
         margin-top: 50px;
     }
 

@@ -47,13 +47,29 @@ const photoColumns = computed(() => {
 
     return columns
 })
+
+
+const randomPhotoFromProject = computed(() => {
+    const photoIndex = randomIntFromInterval(0, project.value.photos.length - 1)
+    return project.value.photos[photoIndex].url
+})
+
+function randomIntFromInterval(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+}
 </script>
 
 <template>
     <div class="project-data-container">
         <NuxtLink class="go-back-button" :to="`/${locale}`">{{ $t('divers.close') }}</NuxtLink>
-        <h2 class="project-title">{{ project.title[locale] }}</h2>
-        <p class="project-description" :style="{width: columnsNb === 1 ? '100%' : '50%'}">{{ project.description[locale] }}</p>
+        <div class="project-description-container">
+            <div class="project-text-container">
+                <h2 class="project-title">{{ project.title[locale] }}</h2>
+                <p class="project-description">{{
+                    project.description[locale] }}</p>
+            </div>
+            <img class="thumbnail" :src="project.thumbnail.url" :alt="project.thumbnail.public_id">
+        </div>
         <div class="photos-container">
             <div v-for="(column, columnIndex) in photoColumns" :key="columnIndex" class="photo-column">
                 <div v-for="photo in column" :key="photo.public_id" class="photo-container">
@@ -68,6 +84,29 @@ const photoColumns = computed(() => {
 <style scoped>
 .project-data-container {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 100px);
+    gap: 100px;
+}
+
+.project-description-container {
+    display: flex;
+    width: 100%;
+    flex: 1;
+    gap: 50px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 100px;
+}
+
+.project-description {
+    width: 300px;
+    white-space: pre-line;
+}
+
+.thumbnail {
+    width: 200px;
 }
 
 .photos-container {
@@ -98,14 +137,32 @@ img {
     max-width: 100%;
 }
 
-.project-description {
-    white-space: pre-line;
-}
-
 .go-back-button {
     text-decoration: none;
     color: brown;
     position: absolute;
     right: 32px;
+}
+
+
+
+@media (max-width: 560px) {
+    .project-data-container {
+        gap: 0;
+    }
+
+    .project-description-container {
+        flex-direction: column-reverse;
+        margin-top: 50px;
+        gap: 25px;
+    }
+
+    .contact-info-container {
+        padding-bottom: 50px;
+    }
+
+    .project-text-container {
+        width: 100%;
+    }
 }
 </style>
